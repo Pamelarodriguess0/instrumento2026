@@ -1,0 +1,117 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 003-01-create-fornecedor
+      author: curso-spring-2026
+      changes:
+        - createTable:
+            tableName: fornecedor
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_fornecedor
+                    nullable: false
+
+              - column:
+                  name: razao_social
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: cnpj
+                  type: VARCHAR(14)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-02-unique-cnpj-fornecedor
+      author: curso-spring-2026
+      changes:
+        - addUniqueConstraint:
+            tableName: fornecedor
+            columnNames: cnpj
+            constraintName: uk_fornecedor_cnpj
+
+  - changeSet:
+      id: 003-03-check-status-fornecedor
+      author: curso-spring-2026
+      changes:
+        - sql:
+            sql: >
+              ALTER TABLE fornecedor
+              ADD CONSTRAINT ck_fornecedor_status
+              CHECK (status IN ('ATIVO', 'INATIVO'));
+
+  - changeSet:
+      id: 003-04-add-estoque-minimo-instrumento
+      author: curso-spring-2026
+      changes:
+        - addColumn:
+            tableName: instrumento
+            columns:
+              - column:
+                  name: estoque_minimo
+                  type: NUMERIC(18,3)
+
+  - changeSet:
+      id: 003-05-fill-estoque-minimo-instrumento
+      author: curso-spring-2026
+      changes:
+        - update:
+            tableName: instrumento
+            columns:
+              - column:
+                  name: estoque_minimo
+                  valueNumeric: 0
+            where: estoque_minimo IS NULL
+
+  - changeSet:
+      id: 003-06-not-null-estoque-minimo-instrumento
+      author: curso-spring-2026
+      changes:
+        - addNotNullConstraint:
+            tableName: instrumento
+            columnName: estoque_minimo
+            columnDataType: NUMERIC(18,3)
+  - changeSet:
+      id: 003-07-check-estoque-minimo-instrumento
+      author: curso-spring-2026
+      changes:
+        - sql:
+            sql: >
+              ALTER TABLE instrumento
+              ADD CONSTRAINT ck_instrumento_estoque_minimo
+              CHECK (estoque_minimo >= 0);
+  - changeSet:
+      id: 003-08-add-fornecedor-id-instrumento
+      author: curso-spring-2026
+      changes:
+        - addColumn:
+            tableName: instrumento
+            columns:
+              - column:
+                  name: fornecedor_id
+                  type: BIGINT
+  - changeSet:
+      id: 003-09-fk-instrumento-fornecedor
+      author: curso-spring-2026
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: instrumento
+            baseColumnNames: fornecedor_id
+            referencedTableName: fornecedor
+            referencedColumnNames: id
+            constraintName: fk_instrumento_fornecedor
+            onDelete: RESTRICT
+            onUpdate: RESTRICT
