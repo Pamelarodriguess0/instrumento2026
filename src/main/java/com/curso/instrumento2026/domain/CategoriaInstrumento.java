@@ -56,6 +56,8 @@ public class CategoriaInstrumento {
         return id;
     }
 
+    public Status getStatus() {return status;}
+
     public String getNome() {
         return nome;
     }

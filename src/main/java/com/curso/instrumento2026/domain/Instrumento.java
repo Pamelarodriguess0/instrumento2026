@@ -1,57 +1,96 @@
 package com.curso.instrumento2026.domain;
 
+import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import jakarta.persistence.*;
 
 @Entity
 @Table(name = "instrumento")
-
 public class Instrumento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "codigo_instrumento", nullable = false, unique = true, length = 50)
+    @Column(
+            name = "codigo_instrumento",
+            nullable = false,
+            unique = true,
+            length = 50
+    )
     private String codigoInstrumento;
 
-    @Column(name = "nome_instrumento", nullable = false, length = 150)
+    @Column(
+            name = "nome_instrumento",
+            nullable = false,
+            length = 150
+    )
     private String nomeInstrumento;
 
-    @Column(name = "quantidade_estoque", nullable = false)
+    @Column(
+            name = "quantidade_estoque",
+            nullable = false
+    )
     private int quantidadeEstoque;
 
-    @Column(name = "estoque_minimo", nullable = false, precision = 18, scale = 3)
+    @Column(
+            name = "estoque_minimo",
+            nullable = false,
+            precision = 18,
+            scale = 3
+    )
     private BigDecimal estoqueMinimo;
 
-    @Column(name = "preco_unitario", nullable = false, precision = 18, scale = 2)
+    @Column(
+            name = "preco_unitario",
+            nullable = false,
+            precision = 18,
+            scale = 2
+    )
     private BigDecimal precoUnitario;
 
-    @Column(name = "data_cadastro", nullable = false)
+    @Column(
+            name = "data_cadastro",
+            nullable = false
+    )
     private LocalDate dataCadastro;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(
+            nullable = false,
+            length = 20
+    )
     private Status status;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "categoria_instrumento_id", nullable = false)
+    @JoinColumn(
+            name = "categoria_instrumento_id",
+            nullable = false
+    )
     private CategoriaInstrumento categoria;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "fornecedor_id",
-            foreignKey = @ForeignKey(name = "fk_instrumento_fornecedor")
+            foreignKey = @ForeignKey(
+                    name = "fk_instrumento_fornecedor"
+            )
     )
     private Fornecedor fornecedor;
 
     protected Instrumento() {
     }
 
-    public Instrumento(Long id, String codigoInstrumento,
-            String nomeInstrumento, int quantidadeEstoque, BigDecimal precoUnitario,
-            LocalDate dataCadastro, Status status, CategoriaInstrumento categoria) {
+    public Instrumento(
+            Long id,
+            String codigoInstrumento,
+            String nomeInstrumento,
+            int quantidadeEstoque,
+            BigDecimal precoUnitario,
+            LocalDate dataCadastro,
+            Status status,
+            CategoriaInstrumento categoria) {
 
         this(
                 id,
@@ -67,44 +106,23 @@ public class Instrumento {
         );
     }
 
-    public Instrumento( Long id, String codigoInstrumento,
-            String nomeInstrumento, int quantidadeEstoque, BigDecimal precoUnitario,
-            BigDecimal estoqueMinimo, LocalDate dataCadastro, Status status,
-            CategoriaInstrumento categoria, Fornecedor fornecedor) {
+    public Instrumento(
+            Long id,
+            String codigoInstrumento,
+            String nomeInstrumento,
+            int quantidadeEstoque,
+            BigDecimal precoUnitario,
+            BigDecimal estoqueMinimo,
+            LocalDate dataCadastro,
+            Status status,
+            CategoriaInstrumento categoria,
+            Fornecedor fornecedor) {
 
-        if (codigoInstrumento == null || codigoInstrumento.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Código do instrumento é obrigatório"
-            );
-        }
-
-        if (nomeInstrumento == null || nomeInstrumento.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Nome do instrumento é obrigatório"
-            );
-        }
-
-        if (quantidadeEstoque < 0) {
-            throw new IllegalArgumentException(
-                    "Quantidade em estoque não pode ser nula"
-            );
-        }
-
-        if (precoUnitario == null ||
-                precoUnitario.compareTo(BigDecimal.ZERO) <= 0) {
-
-            throw new IllegalArgumentException(
-                    "Preço unitário deve ser maior que zero e nem negativo"
-            );
-        }
-
-        if (estoqueMinimo == null ||
-                estoqueMinimo.compareTo(BigDecimal.ZERO) < 0) {
-
-            throw new IllegalArgumentException(
-                    "Estoque mínimo não pode ser negativo"
-            );
-        }
+        validarCodigo(codigoInstrumento);
+        validarNome(nomeInstrumento);
+        validarQuantidadeEstoque(quantidadeEstoque);
+        validarPrecoUnitario(precoUnitario);
+        validarEstoqueMinimo(estoqueMinimo);
 
         if (dataCadastro == null) {
             throw new IllegalArgumentException(
@@ -136,52 +154,148 @@ public class Instrumento {
         this.fornecedor = fornecedor;
     }
 
-        public BigDecimal calcularValorEstoque() {
-            return precoUnitario.multiply(BigDecimal.valueOf(quantidadeEstoque));
+    public Instrumento(
+            String codigoInstrumento,
+            String nomeInstrumento,
+            int quantidadeEstoque,
+            BigDecimal precoUnitario,
+            BigDecimal estoqueMinimo,
+            LocalDate dataCadastro) {
+
+        validarCodigo(codigoInstrumento);
+        validarNome(nomeInstrumento);
+        validarQuantidadeEstoque(quantidadeEstoque);
+        validarPrecoUnitario(precoUnitario);
+        validarEstoqueMinimo(estoqueMinimo);
+
+        if (dataCadastro == null) {
+            throw new IllegalArgumentException(
+                    "Data de cadastro é obrigatória"
+            );
         }
 
-        public void adicionarEstoque(int quantidade) {
-            if (quantidade <= 0) {
-                throw new IllegalArgumentException(
-                        "Quantidade adicionada deve ser maior que zero"
-                );
-            }
+        this.codigoInstrumento = codigoInstrumento;
+        this.nomeInstrumento = nomeInstrumento;
+        this.quantidadeEstoque = quantidadeEstoque;
+        this.precoUnitario = precoUnitario;
+        this.estoqueMinimo = estoqueMinimo;
+        this.dataCadastro = dataCadastro;
+        this.status = Status.ATIVO;
+    }
 
-            this.quantidadeEstoque += quantidade;
+    private void validarCodigo(String codigoInstrumento) {
+        if (codigoInstrumento == null || codigoInstrumento.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Código do instrumento é obrigatório"
+            );
+        }
+    }
+
+    private void validarNome(String nomeInstrumento) {
+        if (nomeInstrumento == null || nomeInstrumento.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Nome do instrumento é obrigatório"
+            );
+        }
+    }
+
+    private void validarQuantidadeEstoque(int quantidadeEstoque) {
+        if (quantidadeEstoque < 0) {
+            throw new IllegalArgumentException(
+                    "Quantidade em estoque não pode ser negativa"
+            );
+        }
+    }
+
+    private void validarPrecoUnitario(BigDecimal precoUnitario) {
+        if (precoUnitario == null ||
+                precoUnitario.compareTo(BigDecimal.ZERO) <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Preço unitário deve ser maior que zero"
+            );
+        }
+    }
+
+    private void validarEstoqueMinimo(BigDecimal estoqueMinimo) {
+        if (estoqueMinimo == null ||
+                estoqueMinimo.compareTo(BigDecimal.ZERO) < 0) {
+
+            throw new IllegalArgumentException(
+                    "Estoque mínimo não pode ser negativo"
+            );
+        }
+    }
+
+    public BigDecimal calcularValorEstoque() {
+        return precoUnitario.multiply(
+                BigDecimal.valueOf(quantidadeEstoque)
+        );
+    }
+
+    public void adicionarEstoque(int quantidade) {
+        if (quantidade <= 0) {
+            throw new IllegalArgumentException(
+                    "Quantidade adicionada deve ser maior que zero"
+            );
         }
 
-        public void retirarEstoque(int quantidade) {
-            if (quantidade <= 0) {
-                throw new IllegalArgumentException("Quantidade deve ser maior que 0");
-            }
-            if (quantidade>quantidadeEstoque){
-                throw new IllegalArgumentException("Estoque insuficiente");
-            }
+        this.quantidadeEstoque += quantidade;
+    }
 
-            this.quantidadeEstoque -= quantidade;
+    public void retirarEstoque(int quantidade) {
+        if (quantidade <= 0) {
+            throw new IllegalArgumentException(
+                    "Quantidade deve ser maior que zero"
+            );
         }
 
-        public void alterarNome(String novoNome) {
-            if (novoNome == null || novoNome.isBlank()) {
-                throw new IllegalArgumentException("Nome do instrumento é obrigatório");
-            }
+        if (quantidade > quantidadeEstoque) {
+            throw new IllegalArgumentException(
+                    "Estoque insuficiente"
+            );
         }
 
-        public void alterarPrecoUnitario(BigDecimal novoPreco) {
-            if (novoPreco == null || novoPreco.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Preço Unitário deve ser maior que 0");
-            }
+        this.quantidadeEstoque -= quantidade;
+    }
 
-            this.precoUnitario = novoPreco;
+    public void alterarNome(String novoNome) {
+        validarNome(novoNome);
+
+        this.nomeInstrumento = novoNome;
+    }
+
+    public void alterarPrecoUnitario(BigDecimal novoPreco) {
+        validarPrecoUnitario(novoPreco);
+
+        this.precoUnitario = novoPreco;
+    }
+
+    public void ativar() {
+        this.status = Status.ATIVO;
+    }
+
+    public void inativar() {
+        this.status = Status.INATIVO;
+    }
+
+    public void definirCategoria(
+            CategoriaInstrumento categoria) {
+
+        if (categoria == null) {
+            throw new IllegalArgumentException(
+                    "Categoria é obrigatória"
+            );
         }
 
-        public void ativar() {
-            this.status = Status.ATIVO;
-        }
+        this.categoria = categoria;
+    }
 
-        public void inativar(){
-            this.status = Status.INATIVO;
-        }
+    public void definirFornecedor(
+            Fornecedor fornecedor) {
+
+        this.fornecedor = fornecedor;
+    }
 
     public Long getId() {
         return id;
@@ -197,6 +311,10 @@ public class Instrumento {
 
     public int getQuantidadeEstoque() {
         return quantidadeEstoque;
+    }
+
+    public BigDecimal getEstoqueMinimo() {
+        return estoqueMinimo;
     }
 
     public BigDecimal getPrecoUnitario() {
@@ -215,5 +333,7 @@ public class Instrumento {
         return categoria;
     }
 
+    public Fornecedor getFornecedor() {
+        return fornecedor;
+    }
 }
-

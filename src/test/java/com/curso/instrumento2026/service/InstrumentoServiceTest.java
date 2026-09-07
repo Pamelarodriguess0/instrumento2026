@@ -3,19 +3,21 @@ package com.curso.instrumento2026.service;
 import com.curso.instrumento2026.domain.CategoriaInstrumento;
 import com.curso.instrumento2026.domain.Instrumento;
 import com.curso.instrumento2026.domain.Status;
+import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
+import com.curso.instrumento2026.repository.InstrumentoRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
-import com.curso.instrumento2026.repository.InstrumentoRepository;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -34,7 +36,10 @@ class InstrumentoServiceTest {
     void deveCadastrarInstrumento() {
 
         CategoriaInstrumento categoria =
-                new CategoriaInstrumento(null, "Percussão");
+                new CategoriaInstrumento(
+                        null,
+                        "Percussão"
+                );
 
         CategoriaInstrumento categoriaSalva =
                 categoriaService.cadastrar(categoria);
@@ -51,7 +56,11 @@ class InstrumentoServiceTest {
         );
 
         Instrumento instrumentoSalvo =
-                instrumentoService.cadastrar(instrumento);
+                instrumentoService.cadastrar(
+                        instrumento,
+                        categoriaSalva.getId(),
+                        null
+                );
 
         assertNotNull(instrumentoSalvo.getId());
     }
@@ -60,7 +69,10 @@ class InstrumentoServiceTest {
     void naoDeveCadastrarInstrumentoComCategoriaInexistente() {
 
         CategoriaInstrumento categoriaInexistente =
-                new CategoriaInstrumento(Long.MAX_VALUE, "Categoria inexistente");
+                new CategoriaInstrumento(
+                        Long.MAX_VALUE,
+                        "Categoria inexistente"
+                );
 
         Instrumento instrumento = new Instrumento(
                 null,
@@ -75,7 +87,11 @@ class InstrumentoServiceTest {
 
         assertThrows(
                 RecursoNaoEncontradoException.class,
-                () -> instrumentoService.cadastrar(instrumento)
+                () -> instrumentoService.cadastrar(
+                        instrumento,
+                        Long.MAX_VALUE,
+                        null
+                )
         );
 
         assertFalse(

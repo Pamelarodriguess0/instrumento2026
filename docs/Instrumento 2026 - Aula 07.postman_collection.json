@@ -1,0 +1,458 @@
+{
+  "info": {
+    "_postman_id": "f2d1f582-d189-4177-abad-16f0c5653b23",
+    "name": "Instrumento 2026 - Aula 07",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58016370",
+    "_collection_link": "https://go.postman.co/collection/58016370-f2d1f582-d189-4177-abad-16f0c5653b23?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Get data",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "postman-echo.com/get",
+          "host": [
+            "postman-echo",
+            "com"
+          ],
+          "path": [
+            "get"
+          ]
+        },
+        "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
+      },
+      "response": []
+    },
+    {
+      "name": "Post data",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Successful POST request\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              ""
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n\t\"name\": \"Add your name in the body\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "postman-echo.com/post",
+          "host": [
+            "postman-echo",
+            "com"
+          ],
+          "path": [
+            "post"
+          ]
+        },
+        "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+      },
+      "response": []
+    },
+    {
+      "name": "00 - Health check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status deve ser 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "01 - Cadastrar categoria",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Categoria deve ser criada\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Resposta deve possuir id\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body.id).to.be.a(\"number\");\r\n});\r\n\r\nconst body = pm.response.json();\r\npm.collectionVariables.set(\"categoriaId\", body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"nome\": \"Palhetas Runner HQ 01\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/categorias",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "categorias"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02 - Cadastrar fornecedor",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Fornecedor deve ser criado\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\nconst body = pm.response.json();\r\npm.collectionVariables.set(\"fornecedorId\", body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"razaoSocial\": \"Distribuidora Musical K Ltda\",\r\n  \"cnpj\": \"47562147895674\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/fornecedores",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "fornecedores"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Cadastrar instrumento",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Instrumento deve ser criado\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Instrumento deve referenciar categoria e fornecedor\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.categoriaId).to.eql(\r\n        Number(pm.collectionVariables.get(\"categoriaId\"))\r\n    );\r\n\r\n    pm.expect(body.fornecedorId).to.eql(\r\n        Number(pm.collectionVariables.get(\"fornecedorId\"))\r\n    );\r\n});\r\n\r\nconst body = pm.response.json();\r\npm.collectionVariables.set(\"instrumentoId\", body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "\r\n{\r\n  \"codigoInstrumento\": \"AULA07-4\",\r\n  \"nomeInstrumento\": \"Violino Eagle\",\r\n  \"quantidadeEstoque\": 20,\r\n  \"precoUnitario\": 1890.00,\r\n  \"estoqueMinimo\": 5,\r\n  \"categoriaId\": {{categoriaId}},\r\n  \"fornecedorId\": {{fornecedorId}}\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/instrumentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "instrumentos"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04 - Buscar produto por ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Consulta deve retornar 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Deve retornar o instrumento solicitado\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.id).to.eql(\r\n        Number(pm.collectionVariables.get(\"instrumentoId\"))\r\n    );\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "instrumentos",
+            "{{instrumentoId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "05 - Listar instrumentos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Listagem deve retornar 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Resposta deve ser uma lista\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body).to.be.an(\"array\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/instrumentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "instrumentos"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "06 - Instrumento inválido - 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Entrada inválida deve retornar 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Erro deve informar os campos inválidos\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.status).to.eql(400);\r\n    pm.expect(body.fields).to.be.an(\"object\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"codigoInstrumento\": \"\",\r\n  \"nomeInstrumento\": \"\",\r\n  \"quantidadeEstoque\": -1,\r\n  \"precoUnitario\": -10,\r\n  \"estoqueMinimo\": -1,\r\n  \"categoriaId\": {{categoriaId}},\r\n  \"fornecedorId\": {{fornecedorId}}\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/instrumentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "instrumentos"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "07 - Instrumento inexistente - 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Instrumento inexistente deve retornar 404\", function () {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"Resposta deve seguir o contrato de erro\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.status).to.eql(404);\r\n    pm.expect(body.error).to.eql(\"Not Found\");\r\n    pm.expect(body.message).to.exist;\r\n    pm.expect(body.path).to.eql(\"/api/instrumentos/999999999\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/instrumentos/999999999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "instrumentos",
+            "999999999"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "08 - Código duplicado - 409",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código duplicado deve retornar 409\", function () {\r\n    pm.response.to.have.status(409);\r\n});\r\n\r\npm.test(\"Resposta deve indicar conflito\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.status).to.eql(409);\r\n    pm.expect(body.error).to.eql(\"Conflict\");\r\n    pm.expect(body.message).to.exist;\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"codigoInstrumento\": \"AULA07-04\",\r\n  \"nomeInstrumento\": \"Instrumento Duplicado\",\r\n  \"quantidadeEstoque\": 10,\r\n  \"precoUnitario\": 1500.00,\r\n  \"estoqueMinimo\": 2,\r\n  \"categoriaId\": {{categoriaId}},\r\n  \"fornecedorId\": {{fornecedorId}}\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/instrumentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "instrumentos"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "09 - JSON malformado - 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"JSON malformado deve retornar 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Resposta deve informar JSON inválido\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.status).to.eql(400);\r\n    pm.expect(body.error).to.eql(\"Bad Request\");\r\n    pm.expect(body.message).to.eql(\"JSON inválido ou malformado\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"codigoInstrumento\": \"AULA07-,ERRO\"\r\n  \"nomeInstrumento\": \"JSON quebrado\",\r\n  \"quantidadeEstoque\": 5,\r\n  \"precoUnitario\": 1000.00,\r\n  \"estoqueMinimo\": 1,\r\n  \"categoriaId\": {{categoriaId}}\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/instrumentos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "instrumentos"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "categoriaId",
+      "value": ""
+    },
+    {
+      "key": "fornecedorID",
+      "value": ""
+    },
+    {
+      "key": "instrumentoID",
+      "value": ""
+    },
+    {
+      "key": "fornecedorId",
+      "value": ""
+    },
+    {
+      "key": "instrumentoId",
+      "value": ""
+    }
+  ]
+}
