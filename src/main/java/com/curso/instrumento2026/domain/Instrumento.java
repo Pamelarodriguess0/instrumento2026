@@ -1,3 +1,4 @@
+
 package com.curso.instrumento2026.domain;
 
 import jakarta.persistence.*;
