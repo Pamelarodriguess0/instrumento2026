@@ -1,0 +1,17 @@
+
+databaseChangeLog:
+
+  - changeSet:
+      id: 004-01-unique-nome-categoria-instrumento
+      author: pamela
+      comment: Impede categorias com nomes duplicados ignorando maiusculas, minusculas e espacos.
+      changes:
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX uk_categoria_instrumento_nome_normalizado
+              ON categoria_instrumento (LOWER(BTRIM(nome)))
+
+      rollback:
+        - sql:
+            sql: >
+              DROP INDEX uk_categoria_instrumento_nome_normalizado

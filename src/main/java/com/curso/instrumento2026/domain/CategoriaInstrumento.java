@@ -33,6 +33,13 @@ public class CategoriaInstrumento {
         this.status =Status.ATIVO;
     }
 
+    public void alterarNome(String novoNome){
+        if (novoNome == null || novoNome.isBlank()) {
+            throw new IllegalArgumentException("Nome da categoria é obrigatório");
+        }
+        this.nome = novoNome;
+    }
+
     public void adicionarInstrumento(Instrumento instrumento) {
         if (instrumento == null) {
             throw new IllegalArgumentException("Instrumento é obrigatório");
@@ -46,6 +53,13 @@ public class CategoriaInstrumento {
             return;
         }
         instrumentos.add(instrumento);
+    }
+
+    public void removerInstrumento(Instrumento instrumento){
+        if (instrumento == null) {
+            throw new IllegalArgumentException("Instrumento é obrigatório");
+        }
+        instrumentos.remove(instrumento);
     }
 
     public List<Instrumento> getInstrumentos() {

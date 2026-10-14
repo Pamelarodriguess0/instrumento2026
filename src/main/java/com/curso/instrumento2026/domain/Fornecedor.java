@@ -53,6 +53,14 @@ public class Fornecedor {
         return cnpj;
     }
 
+    public void ativar() {
+        this.status = Status.ATIVO;
+    }
+
+    public void inativar() {
+       this.status = Status.INATIVO;
+    }
+
     public Long getId() {
         return id;
     }

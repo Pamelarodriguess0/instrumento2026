@@ -272,6 +272,13 @@ public class Instrumento {
         this.precoUnitario = novoPreco;
     }
 
+    public void alterarEstoqueMinimo (BigDecimal novoEstoqueMinimo)
+    {
+        validarEstoqueMinimo(novoEstoqueMinimo);
+
+        this.estoqueMinimo = novoEstoqueMinimo;
+    }
+
     public void ativar() {
         this.status = Status.ATIVO;
     }
@@ -292,10 +299,28 @@ public class Instrumento {
         this.categoria = categoria;
     }
 
+    public void alterarCategoria(CategoriaInstrumento novaCategoria) {
+        if (novaCategoria == null) {
+            throw new IllegalArgumentException("Categoria é obrigatória");
+        }
+        if (this.categoria != null) {
+            this.categoria.removerInstrumento(this);
+        }
+        this.categoria = novaCategoria;
+        novaCategoria.adicionarInstrumento(this);
+    }
+
     public void definirFornecedor(
             Fornecedor fornecedor) {
 
         this.fornecedor = fornecedor;
+    }
+
+    public void alterarFornecedor(Fornecedor novoFornecedor) {
+        if (novoFornecedor == null){
+            throw new IllegalArgumentException("Fornecer é obrigatório");
+        }
+        this.fornecedor = novoFornecedor;
     }
 
     public Long getId() {

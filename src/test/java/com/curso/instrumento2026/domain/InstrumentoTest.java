@@ -159,4 +159,79 @@ public class InstrumentoTest {
         assertEquals(1, categoria.getInstrumentos().size());
         assertEquals(instrumento, categoria.getInstrumentos().get(0));
     }
+    @Test
+    void deveAlterarNomeDoInstrumento() {
+        CategoriaInstrumento categoria =
+                new CategoriaInstrumento(1L, "Cordas");
+
+        Instrumento instrumento = new Instrumento(
+                1L,
+                "INT001",
+                "Violoncelo Eagle",
+                5,
+                new BigDecimal("5000.00"),
+                LocalDate.of(2026, 6, 15),
+                Status.ATIVO,
+                categoria
+        );
+
+        instrumento.alterarNome("Violoncelo Profissional");
+
+        assertEquals(
+                "Violoncelo Profissional",
+                instrumento.getNomeInstrumento()
+        );
+    }
+
+    @Test
+    void deveAlterarPrecoUnitario() {
+        CategoriaInstrumento categoria =
+                new CategoriaInstrumento(1L, "Cordas");
+
+        Instrumento instrumento = new Instrumento(
+                1L,
+                "INT001",
+                "Violoncelo Eagle",
+                5,
+                new BigDecimal("5000.00"),
+                LocalDate.of(2026, 6, 15),
+                Status.ATIVO,
+                categoria
+        );
+
+        instrumento.alterarPrecoUnitario(
+                new BigDecimal("6000.00")
+        );
+
+        assertEquals(
+                new BigDecimal("6000.00"),
+                instrumento.getPrecoUnitario()
+        );
+    }
+
+    @Test
+    void deveAlterarEstoqueMinimo() {
+        CategoriaInstrumento categoria =
+                new CategoriaInstrumento(1L, "Cordas");
+
+        Instrumento instrumento = new Instrumento(
+                1L,
+                "INT001",
+                "Violoncelo Eagle",
+                5,
+                new BigDecimal("5000.00"),
+                LocalDate.of(2026, 6, 15),
+                Status.ATIVO,
+                categoria
+        );
+
+        instrumento.alterarEstoqueMinimo(
+                new BigDecimal("3.000")
+        );
+
+        assertEquals(
+                new BigDecimal("3.000"),
+                instrumento.getEstoqueMinimo()
+        );
+    }
 }
