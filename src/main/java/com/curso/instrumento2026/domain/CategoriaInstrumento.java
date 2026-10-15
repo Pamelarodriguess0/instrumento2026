@@ -29,7 +29,7 @@ public class CategoriaInstrumento {
             throw new IllegalArgumentException("Nome da categoria é obrigatório");
         }
         this.id = id;
-        this.nome = nome;
+        this.nome = nome.trim();
         this.status =Status.ATIVO;
     }
 
@@ -37,7 +37,15 @@ public class CategoriaInstrumento {
         if (novoNome == null || novoNome.isBlank()) {
             throw new IllegalArgumentException("Nome da categoria é obrigatório");
         }
-        this.nome = novoNome;
+        this.nome = novoNome.trim();
+    }
+
+    public void ativar() {
+        this.status = Status.ATIVO;
+    }
+
+    public void inativar() {
+        this.status = Status.INATIVO;
     }
 
     public void adicionarInstrumento(Instrumento instrumento) {
@@ -49,13 +57,27 @@ public class CategoriaInstrumento {
             throw new IllegalArgumentException("Instrumento pertence a outra categoria ");
         }
 
+        validarInclusao(instrumento);
+        adicionarInternamente(instrumento);
+    }
+
+    void adicionarInternamente(Instrumento instrumento) {
         if (instrumentos.contains(instrumento)) {
             return;
         }
         instrumentos.add(instrumento);
     }
 
-    public void removerInstrumento(Instrumento instrumento){
+    void validarInclusao(Instrumento instrumento) {
+        boolean codigoJaUtilizado = instrumentos.stream()
+                .anyMatch(item -> item != instrumento
+                        && item.getCodigoInstrumento().equals(instrumento.getCodigoInstrumento()));
+        if (codigoJaUtilizado) {
+            throw new IllegalArgumentException("Código do instrumento já utilizado na categoria");
+        }
+    }
+
+    void removerInstrumento(Instrumento instrumento){
         if (instrumento == null) {
             throw new IllegalArgumentException("Instrumento é obrigatório");
         }

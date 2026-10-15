@@ -148,7 +148,9 @@ class InstrumentoApiTest {
                         get("/api/instrumentos")
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.conteudo").isArray())
+                .andExpect(jsonPath("$.pagina").value(0))
+                .andExpect(jsonPath("$.tamanho").value(20));
     }
 
     @Test

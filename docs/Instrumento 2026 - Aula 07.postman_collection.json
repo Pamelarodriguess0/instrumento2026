@@ -1,437 +1,1477 @@
 {
   "info": {
     "_postman_id": "f2d1f582-d189-4177-abad-16f0c5653b23",
-    "name": "Instrumento 2026 - Aula 07",
-    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "name": "Instrumento 2026 - Aula 08",
+    "description": "Aula 08: executar as pastas em ordem em banco de aula. Captura IDs, usa dados exclusivos por execução e deixa exclusões para o final. Fornecedor permanece cadastrado porque a API não oferece DELETE de fornecedor. baseUrl padrão: http://localhost:8080. Nome do arquivo preservado da Aula 07. Códigos esperados estão nos nomes e nos testes. Não contém credenciais.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "58016370",
     "_collection_link": "https://go.postman.co/collection/58016370-f2d1f582-d189-4177-abad-16f0c5653b23?source=collection_link"
   },
   "item": [
     {
-      "name": "Get data",
-      "event": [
+      "name": "01 - Preparação e consultas existentes",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code is 200\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "postman-echo.com/get",
-          "host": [
-            "postman-echo",
-            "com"
-          ],
-          "path": [
-            "get"
-          ]
-        },
-        "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
-      },
-      "response": []
-    },
-    {
-      "name": "Post data",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Successful POST request\", function () {",
-              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
-              "});",
-              ""
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n\t\"name\": \"Add your name in the body\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "00 - Health - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "postman-echo.com/post",
-          "host": [
-            "postman-echo",
-            "com"
           ],
-          "path": [
-            "post"
-          ]
+          "response": []
         },
-        "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
-      },
-      "response": []
-    },
-    {
-      "name": "00 - Health check",
-      "event": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status deve ser 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/health",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "health"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "01 - Cadastrar categoria",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Categoria deve ser criada\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Resposta deve possuir id\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body.id).to.be.a(\"number\");\r\n});\r\n\r\nconst body = pm.response.json();\r\npm.collectionVariables.set(\"categoriaId\", body.id);"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"nome\": \"Palhetas Runner HQ 01\"\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "01 - Cadastrar categoria - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias",
+            "description": "Esperado: HTTP 201. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cordas Aula08 {{execucao}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/categorias",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "categorias"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "02 - Cadastrar fornecedor",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Fornecedor deve ser criado\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\nconst body = pm.response.json();\r\npm.collectionVariables.set(\"fornecedorId\", body.id);"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"razaoSocial\": \"Distribuidora Musical K Ltda\",\r\n  \"cnpj\": \"47562147895674\"\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('categoriaId', pm.response.json().id);"
+                ]
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/fornecedores",
-          "host": [
-            "{{baseUrl}}"
           ],
-          "path": [
-            "api",
-            "fornecedores"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "03 - Cadastrar instrumento",
-      "event": [
+          "response": []
+        },
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Instrumento deve ser criado\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Instrumento deve referenciar categoria e fornecedor\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.categoriaId).to.eql(\r\n        Number(pm.collectionVariables.get(\"categoriaId\"))\r\n    );\r\n\r\n    pm.expect(body.fornecedorId).to.eql(\r\n        Number(pm.collectionVariables.get(\"fornecedorId\"))\r\n    );\r\n});\r\n\r\nconst body = pm.response.json();\r\npm.collectionVariables.set(\"instrumentoId\", body.id);"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "\r\n{\r\n  \"codigoInstrumento\": \"AULA07-4\",\r\n  \"nomeInstrumento\": \"Violino Eagle\",\r\n  \"quantidadeEstoque\": 20,\r\n  \"precoUnitario\": 1890.00,\r\n  \"estoqueMinimo\": 5,\r\n  \"categoriaId\": {{categoriaId}},\r\n  \"fornecedorId\": {{fornecedorId}}\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "02 - Cadastrar outra categoria - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias",
+            "description": "Esperado: HTTP 201. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Sopro Aula08 {{execucao}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/instrumentos",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "instrumentos"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "04 - Buscar produto por ID",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Consulta deve retornar 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Deve retornar o instrumento solicitado\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.id).to.eql(\r\n        Number(pm.collectionVariables.get(\"instrumentoId\"))\r\n    );\r\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "instrumentos",
-            "{{instrumentoId}}"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "05 - Listar instrumentos",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Listagem deve retornar 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Resposta deve ser uma lista\", function () {\r\n    const body = pm.response.json();\r\n    pm.expect(body).to.be.an(\"array\");\r\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/instrumentos",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "instrumentos"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "06 - Instrumento inválido - 400",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Entrada inválida deve retornar 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Erro deve informar os campos inválidos\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.status).to.eql(400);\r\n    pm.expect(body.fields).to.be.an(\"object\");\r\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"codigoInstrumento\": \"\",\r\n  \"nomeInstrumento\": \"\",\r\n  \"quantidadeEstoque\": -1,\r\n  \"precoUnitario\": -10,\r\n  \"estoqueMinimo\": -1,\r\n  \"categoriaId\": {{categoriaId}},\r\n  \"fornecedorId\": {{fornecedorId}}\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('outraCategoriaId', pm.response.json().id);"
+                ]
+              }
             }
-          }
+          ],
+          "response": []
         },
-        "url": {
-          "raw": "{{baseUrl}}/api/instrumentos",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "instrumentos"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "07 - Instrumento inexistente - 404",
-      "event": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Instrumento inexistente deve retornar 404\", function () {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"Resposta deve seguir o contrato de erro\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.status).to.eql(404);\r\n    pm.expect(body.error).to.eql(\"Not Found\");\r\n    pm.expect(body.message).to.exist;\r\n    pm.expect(body.path).to.eql(\"/api/instrumentos/999999999\");\r\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/instrumentos/999999999",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "instrumentos",
-            "999999999"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "08 - Código duplicado - 409",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Código duplicado deve retornar 409\", function () {\r\n    pm.response.to.have.status(409);\r\n});\r\n\r\npm.test(\"Resposta deve indicar conflito\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.status).to.eql(409);\r\n    pm.expect(body.error).to.eql(\"Conflict\");\r\n    pm.expect(body.message).to.exist;\r\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"codigoInstrumento\": \"AULA07-04\",\r\n  \"nomeInstrumento\": \"Instrumento Duplicado\",\r\n  \"quantidadeEstoque\": 10,\r\n  \"precoUnitario\": 1500.00,\r\n  \"estoqueMinimo\": 2,\r\n  \"categoriaId\": {{categoriaId}},\r\n  \"fornecedorId\": {{fornecedorId}}\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "03 - Cadastrar fornecedor - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/fornecedores",
+            "description": "Esperado: HTTP 201. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razaoSocial\": \"Fornecedor Aula08 {{execucao}}\",\n  \"cnpj\": \"{{cnpj}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/instrumentos",
-          "host": [
-            "{{baseUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('fornecedorId', pm.response.json().id);"
+                ]
+              }
+            }
           ],
-          "path": [
-            "api",
-            "instrumentos"
-          ]
+          "response": []
+        },
+        {
+          "name": "04 - Cadastrar instrumento - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": "Esperado: HTTP 201. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoInstrumento\":\"{{codigoInstrumento}}\",\"nomeInstrumento\":\"Violino Aula08 {{execucao}}\",\"quantidadeEstoque\":5,\"precoUnitario\":100,\"estoqueMinimo\":10,\"categoriaId\":{{categoriaId}},\"fornecedorId\":{{fornecedorId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('instrumentoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Consultar categoria - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/categorias/{{categoriaId}}",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Consultar instrumento - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Consultar fornecedor - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/fornecedores/{{fornecedorId}}",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Listar fornecedores - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/fornecedores",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "09 - JSON malformado - 400",
-      "event": [
+      "name": "02 - Alteração, status e estoque",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"JSON malformado deve retornar 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Resposta deve informar JSON inválido\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.status).to.eql(400);\r\n    pm.expect(body.error).to.eql(\"Bad Request\");\r\n    pm.expect(body.message).to.eql(\"JSON inválido ou malformado\");\r\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"codigoInstrumento\": \"AULA07-,ERRO\"\r\n  \"nomeInstrumento\": \"JSON quebrado\",\r\n  \"quantidadeEstoque\": 5,\r\n  \"precoUnitario\": 1000.00,\r\n  \"estoqueMinimo\": 1,\r\n  \"categoriaId\": {{categoriaId}}\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "Alterar categoria - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias/{{categoriaId}}",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cordas Aula08 {{execucao}} alterada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/instrumentos",
-          "host": [
-            "{{baseUrl}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
           ],
-          "path": [
-            "api",
-            "instrumentos"
-          ]
+          "response": []
+        },
+        {
+          "name": "Categoria INATIVO - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias/{{categoriaId}}/status",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INATIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Categoria ATIVO - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias/{{categoriaId}}/status",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ATIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Alterar instrumento e remover fornecedor - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeInstrumento\":\"Violino Aula08 {{execucao}}\",\"precoUnitario\":150,\"estoqueMinimo\":10,\"categoriaId\":{{categoriaId}},\"fornecedorId\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Repetir PUT idempotente - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeInstrumento\":\"Violino Aula08 {{execucao}}\",\"precoUnitario\":150,\"estoqueMinimo\":10,\"categoriaId\":{{categoriaId}},\"fornecedorId\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Saldo preservado', function () { pm.expect(pm.response.json().quantidadeEstoque).to.eql(5); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Instrumento INATIVO - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/status",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INATIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Instrumento ATIVO - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/status",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ATIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Entrada estoque - 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/estoque/entradas",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Saldo 8', function () { pm.expect(pm.response.json().quantidadeEstoque).to.eql(8); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Repetir entrada não idempotente - 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/estoque/entradas",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Saldo 11', function () { pm.expect(pm.response.json().quantidadeEstoque).to.eql(11); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Saída estoque - 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/estoque/saidas",
+            "description": "Esperado: HTTP 200. Exemplo válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Saldo 9', function () { pm.expect(pm.response.json().quantidadeEstoque).to.eql(9); });"
+                ]
+              }
+            }
+          ],
+          "response": []
         }
-      },
-      "response": []
+      ]
+    },
+    {
+      "name": "03 - Filtros, paginação e ordenação",
+      "item": [
+        {
+          "name": "Pesquisar categorias - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/categorias?nome={{execucao}}&status=ATIVO&page=0&size=1&sort=nome,asc",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Página estável', function () { const b=pm.response.json(); pm.expect(b.conteudo).to.be.an('array'); pm.expect(b.pagina).to.be.a('number'); pm.expect(b.totalElementos).to.be.a('number'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Segunda página de categorias - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/categorias?nome={{execucao}}&page=1&size=1&sort=nome,asc",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Página estável', function () { const b=pm.response.json(); pm.expect(b.conteudo).to.be.an('array'); pm.expect(b.pagina).to.be.a('number'); pm.expect(b.totalElementos).to.be.a('number'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Pesquisar instrumentos combinando filtros - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos?nomeInstrumento={{execucao}}&status=ATIVO&categoriaId={{categoriaId}}&abaixoEstoqueMinimo=true&page=0&size=5&sort=status,asc&sort=nomeInstrumento,asc",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Página estável', function () { const b=pm.response.json(); pm.expect(b.conteudo).to.be.an('array'); pm.expect(b.pagina).to.be.a('number'); pm.expect(b.totalElementos).to.be.a('number'); });",
+                  "pm.test('Um instrumento compatível', function () { pm.expect(pm.response.json().totalElementos).to.eql(1); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Filtro fornecedor sem instrumento após remoção - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos?fornecedorId={{fornecedorId}}",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Página estável', function () { const b=pm.response.json(); pm.expect(b.conteudo).to.be.an('array'); pm.expect(b.pagina).to.be.a('number'); pm.expect(b.totalElementos).to.be.a('number'); });",
+                  "pm.test('Fornecedor removido', function () { pm.expect(pm.response.json().totalElementos).to.eql(0); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Página padrão - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Página estável', function () { const b=pm.response.json(); pm.expect(b.conteudo).to.be.an('array'); pm.expect(b.pagina).to.be.a('number'); pm.expect(b.totalElementos).to.be.a('number'); });",
+                  "pm.test('Tamanho 20', function () { pm.expect(pm.response.json().tamanho).to.eql(20); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Limite de página - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos?size=200",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Página estável', function () { const b=pm.response.json(); pm.expect(b.conteudo).to.be.an('array'); pm.expect(b.pagina).to.be.a('number'); pm.expect(b.totalElementos).to.be.a('number'); });",
+                  "pm.test('Tamanho máximo 100', function () { pm.expect(pm.response.json().tamanho).to.eql(100); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Exemplos inválidos e conflitos",
+      "item": [
+        {
+          "name": "Categoria inválida - 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Instrumento inválido - 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoInstrumento\": \"\",\n  \"nomeInstrumento\": \"\",\n  \"quantidadeEstoque\": -1,\n  \"precoUnitario\": -1,\n  \"estoqueMinimo\": -1,\n  \"categoriaId\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Código duplicado - 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": "Esperado: HTTP 409. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoInstrumento\":\"{{codigoInstrumento}}\",\"nomeInstrumento\":\"Violino Aula08 {{execucao}}\",\"quantidadeEstoque\":5,\"precoUnitario\":100,\"estoqueMinimo\":10,\"categoriaId\":{{categoriaId}},\"fornecedorId\":{{fornecedorId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(409); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Nome duplicado na alteração - 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias/{{outraCategoriaId}}",
+            "description": "Esperado: HTTP 409. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"  CORDAS Aula08 {{execucao}} alterada  \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(409); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Preço zero na alteração - 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeInstrumento\":\"Violino Aula08 {{execucao}}\",\"precoUnitario\":0,\"estoqueMinimo\":10,\"categoriaId\":{{categoriaId}},\"fornecedorId\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Categoria ausente no PUT - 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeInstrumento\":\"Violino Aula08 {{execucao}}\",\"precoUnitario\":150,\"estoqueMinimo\":10,\"fornecedorId\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Status inválido - 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/status",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INVALIDO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "JSON malformado - 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias/{{categoriaId}}",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Quantidade zero - 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/estoque/entradas",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Quantidade negativa - 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/estoque/saidas",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Quantidade fracionária - 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/estoque/entradas",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 1.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Saldo insuficiente - 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}/estoque/saidas",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 1000000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Conferir saldo após rejeições - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+            "description": "Esperado: HTTP 200. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Saldo continua 9', function () { pm.expect(pm.response.json().quantidadeEstoque).to.eql(9); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Ordenação inválida categorias - 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/categorias?sort=fornecedor.razaoSocial,asc",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Ordenação inválida instrumentos - 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos?sort=fornecedor.razaoSocial,asc",
+            "description": "Esperado: HTTP 400. Exemplo inválido; operação deve ser rejeitada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(400); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Categoria em uso - 409",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/categorias/{{categoriaId}}",
+            "description": "Esperado: HTTP 409. Exemplo inválido; operação deve ser rejeitada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(409); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Instrumento inexistente - 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/9223372036854775807",
+            "description": "Esperado: HTTP 404. Exemplo inválido; operação deve ser rejeitada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(404); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Alterar inexistente - 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/9223372036854775807",
+            "description": "Esperado: HTTP 404. Exemplo inválido; operação deve ser rejeitada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeInstrumento\":\"Violino Aula08 {{execucao}}\",\"precoUnitario\":150,\"estoqueMinimo\":10,\"categoriaId\":{{categoriaId}},\"fornecedorId\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(404); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Exclusões finais",
+      "item": [
+        {
+          "name": "Excluir instrumento - 204",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+            "description": "Esperado: HTTP 204. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', function () { pm.response.to.have.status(204); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Consultar instrumento excluído - 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{instrumentoId}}",
+            "description": "Esperado: HTTP 404. Exemplo inválido; operação deve ser rejeitada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(404); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Excluir categoria liberada - 204",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/categorias/{{categoriaId}}",
+            "description": "Esperado: HTTP 204. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', function () { pm.response.to.have.status(204); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Consultar categoria excluída - 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/categorias/{{categoriaId}}",
+            "description": "Esperado: HTTP 404. Exemplo inválido; operação deve ser rejeitada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('Formato ApiError', function () { const b=pm.response.json(); pm.expect(b.status).to.eql(404); pm.expect(b.message).to.be.a('string'); pm.expect(b.path).to.be.a('string'); pm.expect(b.timestamp).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Excluir outra categoria - 204",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/categorias/{{outraCategoriaId}}",
+            "description": "Esperado: HTTP 204. Exemplo válido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', function () { pm.response.to.have.status(204); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text()).to.eql(''); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
     {
       "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "execucao",
+      "value": ""
+    },
+    {
+      "key": "cnpj",
       "value": ""
     },
     {
@@ -439,11 +1479,7 @@
       "value": ""
     },
     {
-      "key": "fornecedorID",
-      "value": ""
-    },
-    {
-      "key": "instrumentoID",
+      "key": "outraCategoriaId",
       "value": ""
     },
     {
@@ -453,6 +1489,26 @@
     {
       "key": "instrumentoId",
       "value": ""
+    },
+    {
+      "key": "codigoInstrumento",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.info.requestName === '00 - Health - 200') {",
+          "  const identificador = Date.now().toString() + Math.floor(Math.random()*1000).toString().padStart(3, '0');",
+          "  pm.collectionVariables.set('execucao', identificador);",
+          "  pm.collectionVariables.set('cnpj', identificador.slice(-14));",
+          "  pm.collectionVariables.set('codigoInstrumento', 'A08-' + identificador);",
+          "}"
+        ]
+      }
     }
   ]
 }

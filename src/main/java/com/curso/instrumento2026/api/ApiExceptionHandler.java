@@ -2,6 +2,7 @@ package com.curso.instrumento2026.api;
 
 import com.curso.instrumento2026.api.dto.ApiError;
 import com.curso.instrumento2026.exception.RecursoDuplicadoException;
+import com.curso.instrumento2026.exception.RecursoEmUsoException;
 import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,26 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> tratarRegraInvalida(
+            IllegalArgumentException exception,
+            HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(
+                Instant.now(), HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(), exception.getMessage(),
+                request.getRequestURI(), Map.of()));
+    }
+
+    @ExceptionHandler(RecursoEmUsoException.class)
+    public ResponseEntity<ApiError> tratarRecursoEmUso(
+            RecursoEmUsoException exception,
+            HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(
+                Instant.now(), HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(), exception.getMessage(),
+                request.getRequestURI(), Map.of()));
+    }
 
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<ApiError> tratarNaoEncontrado(

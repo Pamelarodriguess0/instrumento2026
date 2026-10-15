@@ -10,7 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
+import com.curso.instrumento2026.api.dto.CategoriaInstrumentoAtualizacaoRequest;
+import com.curso.instrumento2026.api.dto.StatusRequest;
+import com.curso.instrumento2026.api.dto.PaginaResponse;
+import com.curso.instrumento2026.domain.Status;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 
 @RestController
 @RequestMapping("/api/categorias")
@@ -54,11 +60,28 @@ public class CategoriaInstrumentoController {
     }
 
     @GetMapping
-    public List<CategoriaInstrumentoResponse> listar() {
+    public PaginaResponse<CategoriaInstrumentoResponse> pesquisar(
+            @RequestParam(required = false) String nome,
+            @RequestParam(required = false) Status status,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        return PaginaResponse.de(service.pesquisar(nome, status, pageable), mapper::toResponse);
+    }
 
-        return service.listar()
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+    @PutMapping("/{id}")
+    public CategoriaInstrumentoResponse alterar(@PathVariable Long id,
+            @Valid @RequestBody CategoriaInstrumentoAtualizacaoRequest request) {
+        return mapper.toResponse(service.alterar(id, request.nome()));
+    }
+
+    @PutMapping("/{id}/status")
+    public CategoriaInstrumentoResponse alterarStatus(@PathVariable Long id,
+            @Valid @RequestBody StatusRequest request) {
+        return mapper.toResponse(service.alterarStatus(id, request.status()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        service.excluir(id);
+        return ResponseEntity.noContent().build();
     }
 }

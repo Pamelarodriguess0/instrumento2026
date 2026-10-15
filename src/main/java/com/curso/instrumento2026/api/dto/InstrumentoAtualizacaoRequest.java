@@ -14,7 +14,7 @@ public record InstrumentoAtualizacaoRequest(
         String nomeInstrumento,
 
         @NotNull(message = "Preço unitário é obrigatório")
-        @PositiveOrZero(message = "Preço unitário não pode ser negativo")
+        @Positive(message = "Preço unitário deve ser maior que zero")
         BigDecimal precoUnitario,
 
         @NotNull(message = "Estoque mínimo é obrigatório")

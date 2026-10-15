@@ -151,7 +151,7 @@ public class Instrumento {
         this.estoqueMinimo = estoqueMinimo;
         this.dataCadastro = dataCadastro;
         this.status = status;
-        this.categoria = categoria;
+        alterarCategoria(categoria);
         this.fornecedor = fornecedor;
     }
 
@@ -241,7 +241,11 @@ public class Instrumento {
             );
         }
 
-        this.quantidadeEstoque += quantidade;
+        try {
+            this.quantidadeEstoque = Math.addExact(this.quantidadeEstoque, quantidade);
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException("Quantidade em estoque excede o limite permitido", exception);
+        }
     }
 
     public void retirarEstoque(int quantidade) {
@@ -289,25 +293,22 @@ public class Instrumento {
 
     public void definirCategoria(
             CategoriaInstrumento categoria) {
-
-        if (categoria == null) {
-            throw new IllegalArgumentException(
-                    "Categoria é obrigatória"
-            );
-        }
-
-        this.categoria = categoria;
+        alterarCategoria(categoria);
     }
 
     public void alterarCategoria(CategoriaInstrumento novaCategoria) {
         if (novaCategoria == null) {
             throw new IllegalArgumentException("Categoria é obrigatória");
         }
+        if (this.categoria == novaCategoria) {
+            return;
+        }
+        novaCategoria.validarInclusao(this);
         if (this.categoria != null) {
             this.categoria.removerInstrumento(this);
         }
         this.categoria = novaCategoria;
-        novaCategoria.adicionarInstrumento(this);
+        novaCategoria.adicionarInternamente(this);
     }
 
     public void definirFornecedor(
@@ -317,9 +318,6 @@ public class Instrumento {
     }
 
     public void alterarFornecedor(Fornecedor novoFornecedor) {
-        if (novoFornecedor == null){
-            throw new IllegalArgumentException("Fornecer é obrigatório");
-        }
         this.fornecedor = novoFornecedor;
     }
 
