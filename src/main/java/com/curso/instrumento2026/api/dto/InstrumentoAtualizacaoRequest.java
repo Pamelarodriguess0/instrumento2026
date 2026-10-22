@@ -1,4 +1,7 @@
+
 package com.curso.instrumento2026.api.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -7,25 +10,58 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
+@Schema(description = "Dados para atualização de um instrumento musical")
 public record InstrumentoAtualizacaoRequest(
+
+        @Schema(
+                description = "Novo nome do instrumento",
+                example = "Violino Eagle",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         @NotBlank(message = "Nome é obrigatório")
         @Size(max = 150,
                 message = "Nome deve possuir no máximo 150 caracteres")
         String nomeInstrumento,
 
+        @Schema(
+                description = "Preço unitário do instrumento",
+                example = "1800.00",
+                exclusiveMinimum = true,
+                minimum = "0",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         @NotNull(message = "Preço unitário é obrigatório")
         @Positive(message = "Preço unitário deve ser maior que zero")
         BigDecimal precoUnitario,
 
+        @Schema(
+                description = "Quantidade mínima desejada em estoque",
+                example = "2.000",
+                minimum = "0",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         @NotNull(message = "Estoque mínimo é obrigatório")
         @PositiveOrZero(message = "Estoque mínimo não pode ser negativo")
         BigDecimal estoqueMinimo,
 
+        @Schema(
+                description = "Identificador da categoria",
+                example = "1",
+                minimum = "1",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         @NotNull(message = "Categoria é obrigatória")
         @Positive(message = "Identificador da categoria deve ser positivo")
         Long categoriaId,
 
+        @Schema(
+                description = "Identificador do fornecedor, quando informado",
+                example = "1",
+                minimum = "1",
+                nullable = true
+        )
         @Positive(message = "Identificador do fornecedor deve ser positivo")
-        Long fornecedorId ) {
-}
+        Long fornecedorId
 
+) {
+}

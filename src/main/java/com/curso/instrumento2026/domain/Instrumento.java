@@ -320,43 +320,33 @@ public class Instrumento {
     public void alterarFornecedor(Fornecedor novoFornecedor) {
         this.fornecedor = novoFornecedor;
     }
-
     public Long getId() {
         return id;
     }
-
     public String getCodigoInstrumento() {
         return codigoInstrumento;
     }
-
     public String getNomeInstrumento() {
         return nomeInstrumento;
     }
-
     public int getQuantidadeEstoque() {
         return quantidadeEstoque;
     }
-
     public BigDecimal getEstoqueMinimo() {
         return estoqueMinimo;
     }
-
     public BigDecimal getPrecoUnitario() {
         return precoUnitario;
     }
-
     public LocalDate getDataCadastro() {
         return dataCadastro;
     }
-
     public Status getStatus() {
         return status;
     }
-
     public CategoriaInstrumento getCategoria() {
         return categoria;
     }
-
     public Fornecedor getFornecedor() {
         return fornecedor;
     }
