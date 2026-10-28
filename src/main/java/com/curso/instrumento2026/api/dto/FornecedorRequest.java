@@ -2,6 +2,7 @@
 package com.curso.instrumento2026.api.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.curso.instrumento2026.api.validation.CnpjValido;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -19,13 +20,14 @@ public record FornecedorRequest(
         String razaoSocial,
 
         @Schema(
-                description = "CNPJ do fornecedor, composto por 14 caracteres",
+                description = "CNPJ do fornecedor, com 14 dígitos e dígitos verificadores válidos, sem pontuação",
                 example = "12345678000195",
                 minLength = 14,
                 maxLength = 14,
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
         @NotBlank(message = "CNPJ é obrigatório")
+        @CnpjValido
         @Size(min = 14, max = 14, message = "CNPJ deve possuir 14 caracteres")
         String cnpj
 

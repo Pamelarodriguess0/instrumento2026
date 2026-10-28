@@ -1,0 +1,2400 @@
+openapi: 3.1.0
+info:
+  title: API de Controle de Instrumentos Musicais
+  description: "API para gerenciamento de instrumentos musicais, categorias, fornecedores,\
+    \ estoque, pessoas, clientes, colaboradores e vendas."
+  contact:
+    name: Curso de Spring Boot 2026
+  version: 1.0.0
+externalDocs:
+  description: Material didático do projeto
+  url: https://github.com/jeffersonarpasserini/suporteos2026
+servers:
+- url: http://localhost
+  description: Generated server url
+tags:
+- name: Categorias
+  description: "Operações de cadastro, consulta, atualização, exclusão e alteraçã\
+    o de status das categorias de instrumentos musicais"
+- name: Instrumentos
+  description: "Operações de cadastro, consulta, atualização, exclusão e controle\
+    \ de estoque de instrumentos musicais"
+- name: Infraestrutura
+  description: Endpoints para verificação da disponibilidade da API
+- name: Fornecedores
+  description: Operações de cadastro e consulta de fornecedores de instrumentos musicais
+paths:
+  /api/pessoas/{id}:
+    get:
+      tags:
+      - Pessoas
+      summary: Buscar pessoa por ID
+      operationId: buscarPorId
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Recurso encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PessoaResponse"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      tags:
+      - Pessoas
+      summary: Atualizar pessoa
+      operationId: alterar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PessoaRequest"
+        required: true
+      responses:
+        "200":
+          description: Cadastro atualizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PessoaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: CPF ou e-mail já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/pessoas/{id}/status:
+    put:
+      tags:
+      - Pessoas
+      summary: Alterar status da pessoa
+      operationId: alterarStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusRequest"
+        required: true
+      responses:
+        "200":
+          description: Status atualizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PessoaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/instrumentos/{id}:
+    get:
+      tags:
+      - Instrumentos
+      summary: Buscar instrumento por ID
+      description: Consulta os dados de um instrumento musical pelo seu identificador.
+      operationId: buscarPorId_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Instrumento encontrado com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InstrumentoResponse"
+        "404":
+          description: Instrumento não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      tags:
+      - Instrumentos
+      summary: Atualizar instrumento
+      description: "Atualiza o nome, preço, estoque mínimo, categoria e fornecedor\
+        \ de um instrumento musical."
+      operationId: alterar_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstrumentoAtualizacaoRequest"
+        required: true
+      responses:
+        "200":
+          description: Instrumento atualizado com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InstrumentoResponse"
+        "400":
+          description: Dados inválidos para atualização do instrumento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: "Instrumento, categoria ou fornecedor não encontrado"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      tags:
+      - Instrumentos
+      summary: Excluir instrumento
+      description: Exclui um instrumento musical pelo seu identificador.
+      operationId: excluir
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: Instrumento excluído com sucesso
+        "404":
+          description: Instrumento não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Instrumento vinculado a uma venda; o histórico deve ser preservado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/instrumentos/{id}/status:
+    put:
+      tags:
+      - Instrumentos
+      summary: Alterar status do instrumento
+      description: Ativa ou inativa um instrumento musical.
+      operationId: alterarStatus_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusRequest"
+        required: true
+      responses:
+        "200":
+          description: Status do instrumento alterado com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InstrumentoResponse"
+        "400":
+          description: Status inválido ou não informado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Instrumento não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/colaboradores/{id}:
+    get:
+      tags:
+      - Colaboradores
+      summary: Buscar colaborador por ID
+      operationId: buscarPorId_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Recurso encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ColaboradorResponse"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      tags:
+      - Colaboradores
+      summary: Atualizar colaborador
+      operationId: alterar_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ColaboradorAtualizacaoRequest"
+        required: true
+      responses:
+        "200":
+          description: Cadastro atualizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ColaboradorResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Pessoa já possui vínculo ou matrícula já cadastrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/clientes/{id}:
+    get:
+      tags:
+      - Clientes
+      summary: Buscar cliente por ID
+      operationId: buscarPorId_3
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Recurso encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ClienteResponse"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      tags:
+      - Clientes
+      summary: Atualizar cliente
+      operationId: alterar_3
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClienteAtualizacaoRequest"
+        required: true
+      responses:
+        "200":
+          description: Cadastro atualizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ClienteResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/categorias/{id}:
+    get:
+      tags:
+      - Categorias
+      summary: Buscar categoria por ID
+      description: Consulta uma categoria pelo seu identificador.
+      operationId: buscarPorId_4
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Categoria encontrada com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CategoriaInstrumentoResponse"
+        "404":
+          description: Categoria não encontrada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      tags:
+      - Categorias
+      summary: Atualizar categoria
+      description: Atualiza o nome de uma categoria de instrumentos musicais.
+      operationId: alterar_4
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoriaInstrumentoAtualizacaoRequest"
+        required: true
+      responses:
+        "200":
+          description: Categoria atualizada com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CategoriaInstrumentoResponse"
+        "400":
+          description: Dados inválidos para atualização
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Categoria não encontrada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Nome da categoria já cadastrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      tags:
+      - Categorias
+      summary: Excluir categoria
+      description: Exclui uma categoria que não possui instrumentos vinculados.
+      operationId: excluir_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: Categoria excluída com sucesso
+        "404":
+          description: Categoria não encontrada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Categoria não pode ser excluída porque possui instrumentos
+            vinculados
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/categorias/{id}/status:
+    put:
+      tags:
+      - Categorias
+      summary: Alterar status da categoria
+      description: Ativa ou inativa uma categoria de instrumentos musicais.
+      operationId: alterarStatus_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusRequest"
+        required: true
+      responses:
+        "200":
+          description: Status da categoria alterado com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CategoriaInstrumentoResponse"
+        "400":
+          description: Status inválido ou não informado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Categoria não encontrada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/vendas:
+    get:
+      tags:
+      - Vendas
+      summary: Pesquisar vendas
+      description: "Retorna resumos sem itens ou total. Datas inicial e final inclusivas;\
+        \ período invertido retorna 400. Ordenação por id, dataVenda ou status; pá\
+        gina padrão 20, limite 100."
+      operationId: pesquisar
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ABERTA
+          - FINALIZADA
+          - CANCELADA
+      - name: clienteId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      - name: vendedorId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      - name: dataInicial
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: dataFinal
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "id,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Pesquisa paginada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginaResponseVendaResumoResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      tags:
+      - Vendas
+      summary: Cadastrar venda
+      operationId: cadastrar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VendaRequest"
+        required: true
+      responses:
+        "201":
+          description: Cadastro realizado
+          headers:
+            Location:
+              description: URI do recurso criado
+              style: simple
+              schema:
+                type: string
+                format: uri
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/VendaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/vendas/{id}/itens:
+    post:
+      tags:
+      - Vendas
+      summary: Adicionar instrumento à venda
+      description: Quantidade em unidades inteiras; o preço atual é preservado no
+        item.
+      operationId: adicionarItem
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemVendaRequest"
+        required: true
+      responses:
+        "200":
+          description: Item adicionado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/VendaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/vendas/{id}/finalizacao:
+    post:
+      tags:
+      - Vendas
+      summary: Finalizar venda e baixar estoque
+      description: "Somente venda aberta e não vazia, com participantes habilitados,\
+        \ instrumentos ativos e saldo suficiente. As baixas são atômicas; falhas preservam\
+        \ os saldos e a venda aberta. Repetir a finalização retorna 400 sem nova baixa."
+      operationId: finalizar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Venda finalizada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/VendaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/vendas/{id}/cancelamento:
+    post:
+      tags:
+      - Vendas
+      summary: Cancelar venda aberta
+      description: Cancela sem movimentar estoque. Venda finalizada ou cancelada retorna
+        400; não realiza estorno.
+      operationId: cancelar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Venda cancelada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/VendaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/pessoas:
+    get:
+      tags:
+      - Pessoas
+      summary: Pesquisar pessoas
+      operationId: pesquisar_1
+      parameters:
+      - name: nome
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: cpf
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ATIVO
+          - INATIVO
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "id,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Pesquisa paginada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginaResponsePessoaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      tags:
+      - Pessoas
+      summary: Cadastrar pessoa
+      operationId: cadastrar_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PessoaRequest"
+        required: true
+      responses:
+        "201":
+          description: Cadastro realizado
+          headers:
+            Location:
+              description: URI do recurso criado
+              style: simple
+              schema:
+                type: string
+                format: uri
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PessoaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: CPF ou e-mail já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/instrumentos:
+    get:
+      tags:
+      - Instrumentos
+      summary: Pesquisar instrumentos
+      description: Pesquisa instrumentos musicais utilizando filtros e paginação.
+      operationId: pesquisar_2
+      parameters:
+      - name: nomeInstrumento
+        in: query
+        description: Filtra instrumentos pelo nome
+        required: false
+        schema:
+          type: string
+        example: Violino
+      - name: status
+        in: query
+        description: Filtra instrumentos pelo status
+        required: false
+        schema:
+          type: string
+          enum:
+          - ATIVO
+          - INATIVO
+        example: ATIVO
+      - name: categoriaId
+        in: query
+        description: Filtra instrumentos pelo identificador da categoria
+        required: false
+        schema:
+          type: integer
+          format: int64
+        example: 1
+      - name: fornecedorId
+        in: query
+        description: Filtra instrumentos pelo identificador do fornecedor
+        required: false
+        schema:
+          type: integer
+          format: int64
+        example: 1
+      - name: abaixoEstoqueMinimo
+        in: query
+        description: Filtra instrumentos abaixo do estoque mínimo
+        required: false
+        schema:
+          type: boolean
+        example: true
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "id,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Pesquisa realizada com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginaResponseInstrumentoResponse"
+        "400":
+          description: Parâmetros de pesquisa ou ordenação inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      tags:
+      - Instrumentos
+      summary: Cadastrar instrumento
+      description: Cadastra um novo instrumento musical no sistema.
+      operationId: cadastrar_2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstrumentoRequest"
+        required: true
+      responses:
+        "201":
+          description: Instrumento cadastrado com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InstrumentoResponse"
+        "400":
+          description: Dados inválidos para cadastro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Categoria ou fornecedor não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Código do instrumento já cadastrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/instrumentos/{id}/estoque/saidas:
+    post:
+      tags:
+      - Instrumentos
+      summary: Registrar saída de estoque
+      description: Retira uma quantidade do estoque de um instrumento musical.
+      operationId: retirarEstoque
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MovimentacaoEstoqueRequest"
+        required: true
+      responses:
+        "200":
+          description: Saída de estoque registrada com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InstrumentoResponse"
+        "400":
+          description: Quantidade inválida ou operação não permitida
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Instrumento não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/instrumentos/{id}/estoque/entradas:
+    post:
+      tags:
+      - Instrumentos
+      summary: Registrar entrada de estoque
+      description: Adiciona uma quantidade ao estoque de um instrumento musical.
+      operationId: receberEstoque
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MovimentacaoEstoqueRequest"
+        required: true
+      responses:
+        "200":
+          description: Entrada de estoque registrada com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InstrumentoResponse"
+        "400":
+          description: Quantidade inválida
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Instrumento não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/fornecedores:
+    get:
+      tags:
+      - Fornecedores
+      summary: Listar fornecedores
+      description: Lista todos os fornecedores cadastrados no sistema.
+      operationId: listar
+      responses:
+        "200":
+          description: Fornecedores listados com sucesso
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FornecedorResponse"
+    post:
+      tags:
+      - Fornecedores
+      summary: Cadastrar fornecedor
+      description: Cadastra um novo fornecedor de instrumentos musicais.
+      operationId: cadastrar_3
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FornecedorRequest"
+        required: true
+      responses:
+        "201":
+          description: Fornecedor cadastrado com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FornecedorResponse"
+        "400":
+          description: Dados inválidos para cadastro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Fornecedor com CNPJ já cadastrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/colaboradores:
+    get:
+      tags:
+      - Colaboradores
+      summary: Pesquisar colaboradores
+      operationId: pesquisar_3
+      parameters:
+      - name: nome
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: matricula
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: funcao
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - VENDEDOR
+          - ESTOQUISTA
+          - GERENTE
+          - ADMINISTRATIVO
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "id,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Pesquisa paginada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginaResponseColaboradorResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      tags:
+      - Colaboradores
+      summary: Cadastrar colaborador
+      operationId: cadastrar_4
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ColaboradorRequest"
+        required: true
+      responses:
+        "201":
+          description: Cadastro realizado
+          headers:
+            Location:
+              description: URI do recurso criado
+              style: simple
+              schema:
+                type: string
+                format: uri
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ColaboradorResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Pessoa já possui vínculo ou matrícula já cadastrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/clientes:
+    get:
+      tags:
+      - Clientes
+      summary: Pesquisar clientes
+      operationId: pesquisar_4
+      parameters:
+      - name: nome
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: cpf
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "id,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Pesquisa paginada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginaResponseClienteResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      tags:
+      - Clientes
+      summary: Cadastrar cliente
+      operationId: cadastrar_5
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClienteRequest"
+        required: true
+      responses:
+        "201":
+          description: Cadastro realizado
+          headers:
+            Location:
+              description: URI do recurso criado
+              style: simple
+              schema:
+                type: string
+                format: uri
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ClienteResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Pessoa já possui cadastro de cliente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/categorias:
+    get:
+      tags:
+      - Categorias
+      summary: Pesquisar categorias
+      description: "Pesquisa categorias utilizando filtros de nome, status e paginaç\
+        ão."
+      operationId: pesquisar_5
+      parameters:
+      - name: nome
+        in: query
+        description: Filtra categorias pelo nome
+        required: false
+        schema:
+          type: string
+        example: Cordas
+      - name: status
+        in: query
+        description: Filtra categorias pelo status
+        required: false
+        schema:
+          type: string
+          enum:
+          - ATIVO
+          - INATIVO
+        example: ATIVO
+      - name: page
+        in: query
+        description: "Número da página, começando em zero"
+        example: 0
+      - name: size
+        in: query
+        description: Quantidade de registros por página
+        example: 20
+      - name: sort
+        in: query
+        description: Campo e direção da ordenação
+        example: "id,asc"
+      responses:
+        "200":
+          description: Pesquisa realizada com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginaResponseCategoriaInstrumentoResponse"
+        "400":
+          description: Parâmetros de pesquisa ou ordenação inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      tags:
+      - Categorias
+      summary: Cadastrar categoria
+      description: Cadastra uma nova categoria de instrumentos musicais.
+      operationId: cadastrar_6
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoriaInstrumentoRequest"
+        required: true
+      responses:
+        "201":
+          description: Categoria cadastrada com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CategoriaInstrumentoResponse"
+        "400":
+          description: Dados inválidos para cadastro
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Nome da categoria já cadastrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/vendas/{id}:
+    get:
+      tags:
+      - Vendas
+      summary: Buscar venda por ID
+      operationId: buscarPorId_5
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Recurso encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/VendaResponse"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/health:
+    get:
+      tags:
+      - Infraestrutura
+      summary: Verificar saúde da API
+      description: Retorna OK quando a aplicação está respondendo.
+      operationId: health
+      responses:
+        "200":
+          description: Aplicação respondendo normalmente
+          content:
+            '*/*':
+              schema:
+                type: string
+  /api/fornecedores/{id}:
+    get:
+      tags:
+      - Fornecedores
+      summary: Buscar fornecedor por ID
+      description: Consulta os dados de um fornecedor pelo seu identificador.
+      operationId: buscarPorId_6
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Fornecedor encontrado com sucesso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FornecedorResponse"
+        "404":
+          description: Fornecedor não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/vendas/{vendaId}/itens/{itemId}:
+    delete:
+      tags:
+      - Vendas
+      summary: Remover item da venda aberta
+      description: Não movimenta estoque. Item que não pertence à venda ou venda encerrada
+        retorna 400; venda inexistente retorna 404.
+      operationId: removerItem
+      parameters:
+      - name: vendaId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Item removido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/VendaResponse"
+        "400":
+          description: Dados ou regra de negócio inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+components:
+  schemas:
+    PessoaRequest:
+      type: object
+      description: "Dados civis; CPF sem pontuação, com dígitos verificadores válidos"
+      properties:
+        nome:
+          type: string
+          example: Ana Souza
+          maxLength: 150
+          minLength: 0
+        email:
+          type: string
+          format: email
+          example: ana@example.com
+          maxLength: 180
+          minLength: 0
+        cpf:
+          type: string
+          description: "CPF com 11 dígitos e verificadores válidos, sem pontuação;\
+            \ não comprova titularidade"
+          example: "52998224725"
+          maxLength: 11
+          minLength: 11
+          pattern: "^[0-9]{11}$"
+      required:
+      - cpf
+      - email
+      - nome
+    ApiError:
+      type: object
+      description: Representação padronizada de erros da API
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Data e hora em que ocorreu o erro
+        status:
+          type: integer
+          format: int32
+          description: Código HTTP do erro
+          example: 404
+        error:
+          type: string
+          description: Descrição do status HTTP
+          example: Not Found
+        message:
+          type: string
+          description: Mensagem explicativa do erro
+          example: Instrumento não encontrado
+        path:
+          type: string
+          description: Caminho da requisição que gerou o erro
+          example: /api/instrumentos/999
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+          description: Erros de validação associados aos campos da requisição
+    PessoaResponse:
+      type: object
+      description: Identidade civil compartilhada pelos papéis comerciais
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        nome:
+          type: string
+          example: Ana Souza
+        email:
+          type: string
+          example: ana@example.com
+        cpf:
+          type: string
+          description: "CPF com 11 dígitos e verificadores válidos, sem pontuação;\
+            \ não comprova titularidade"
+          example: "52998224725"
+          maxLength: 11
+          minLength: 11
+          pattern: "^[0-9]{11}$"
+        dataCadastro:
+          type: string
+          format: date
+          example: 2026-10-28
+        status:
+          type: string
+          enum:
+          - ATIVO
+          - INATIVO
+          example: ATIVO
+    StatusRequest:
+      type: object
+      description: Dados necessários para alterar o status de um instrumento ou categoria
+      properties:
+        status:
+          type: string
+          description: Novo status do registro
+          enum:
+          - ATIVO
+          - INATIVO
+          example: ATIVO
+      required:
+      - status
+    InstrumentoAtualizacaoRequest:
+      type: object
+      description: Dados para atualização de um instrumento musical
+      properties:
+        nomeInstrumento:
+          type: string
+          description: Novo nome do instrumento
+          example: Violino Eagle
+          maxLength: 150
+          minLength: 0
+        precoUnitario:
+          type: number
+          description: Preço unitário do instrumento
+          example: 1800.0
+          exclusiveMinimum: 0
+          minimum: 0
+        estoqueMinimo:
+          type: number
+          description: Quantidade mínima desejada em estoque
+          example: 2.0
+          minimum: 0
+        categoriaId:
+          type: integer
+          format: int64
+          description: Identificador da categoria
+          example: 1
+          exclusiveMinimum: 0
+          minimum: 1
+        fornecedorId:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: "Identificador do fornecedor, quando informado"
+          example: 1
+          exclusiveMinimum: 0
+          minimum: 1
+      required:
+      - categoriaId
+      - estoqueMinimo
+      - nomeInstrumento
+      - precoUnitario
+    InstrumentoResponse:
+      type: object
+      description: Dados de um instrumento musical retornados pela API
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador do instrumento
+          example: 1
+        codigoInstrumento:
+          type: string
+          description: Código único do instrumento
+          example: INT001
+        nomeInstrumento:
+          type: string
+          description: Nome do instrumento
+          example: Violino Eagle
+        quantidadeEstoque:
+          type: integer
+          format: int32
+          description: Quantidade disponível em estoque
+          example: 10
+        precoUnitario:
+          type: number
+          description: Preço unitário do instrumento
+          example: 1800.0
+        estoqueMinimo:
+          type: number
+          description: Estoque mínimo do instrumento
+          example: 2.0
+        valorEstoque:
+          type: number
+          description: Valor total dos instrumentos em estoque
+          example: 18000.0
+        dataCadastro:
+          type: string
+          format: date
+          description: Data de cadastro do instrumento
+          example: 2026-10-20
+        status:
+          type: string
+          description: Status atual do instrumento
+          enum:
+          - ATIVO
+          - INATIVO
+          example: ATIVO
+        categoriaId:
+          type: integer
+          format: int64
+          description: Identificador da categoria
+          example: 1
+        categoriaNome:
+          type: string
+          description: Nome da categoria
+          example: Cordas
+        fornecedorId:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: "Identificador do fornecedor, quando vinculado"
+          example: 1
+        fornecedorRazaoSocial:
+          type:
+          - string
+          - "null"
+          description: "Razão social do fornecedor, quando vinculado"
+          example: Instrumentos Musicais Brasil Ltda
+    ColaboradorAtualizacaoRequest:
+      type: object
+      description: Altera matrícula e função; preserva pessoa e data de admissão
+      properties:
+        matricula:
+          type: string
+          example: VEN-001
+          maxLength: 30
+          minLength: 0
+        funcao:
+          type: string
+          enum:
+          - VENDEDOR
+          - ESTOQUISTA
+          - GERENTE
+          - ADMINISTRATIVO
+          example: VENDEDOR
+      required:
+      - funcao
+      - matricula
+    ColaboradorResponse:
+      type: object
+      description: Vínculo profissional; função não representa permissão de acesso
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        pessoaId:
+          type: integer
+          format: int64
+          example: 1
+        nome:
+          type: string
+          example: Ana Souza
+        email:
+          type: string
+          example: ana@example.com
+        cpf:
+          type: string
+          description: "CPF com 11 dígitos e verificadores válidos, sem pontuação;\
+            \ não comprova titularidade"
+          example: "52998224725"
+          maxLength: 11
+          minLength: 11
+          pattern: "^[0-9]{11}$"
+        matricula:
+          type: string
+          example: VEN-001
+        funcao:
+          type: string
+          enum:
+          - VENDEDOR
+          - ESTOQUISTA
+          - GERENTE
+          - ADMINISTRATIVO
+          example: VENDEDOR
+        dataAdmissao:
+          type: string
+          format: date
+          example: 2026-09-29
+    ClienteAtualizacaoRequest:
+      type: object
+      description: Altera somente o telefone; não substitui a pessoa
+      properties:
+        telefone:
+          type: string
+          example: (11) 99999-0000
+          maxLength: 30
+          minLength: 0
+    ClienteResponse:
+      type: object
+      description: Cliente e dados de sua pessoa
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        pessoaId:
+          type: integer
+          format: int64
+          example: 1
+        nome:
+          type: string
+          example: Ana Souza
+        email:
+          type: string
+          example: ana@example.com
+        cpf:
+          type: string
+          description: "CPF com 11 dígitos e verificadores válidos, sem pontuação;\
+            \ não comprova titularidade"
+          example: "52998224725"
+          maxLength: 11
+          minLength: 11
+          pattern: "^[0-9]{11}$"
+        telefone:
+          type: string
+          example: (11) 99999-0000
+    CategoriaInstrumentoAtualizacaoRequest:
+      type: object
+      description: Dados necessários para atualizar uma categoria de instrumentos
+        musicais
+      properties:
+        nome:
+          type: string
+          description: Novo nome da categoria
+          example: Instrumentos de Cordas
+          maxLength: 120
+          minLength: 0
+      required:
+      - nome
+    CategoriaInstrumentoResponse:
+      type: object
+      description: Dados de uma categoria de instrumentos musicais retornados pela
+        API
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador da categoria
+          example: 1
+        nome:
+          type: string
+          description: Nome da categoria
+          example: Instrumentos de Cordas
+        status:
+          type: string
+          description: Status atual da categoria
+          enum:
+          - ATIVO
+          - INATIVO
+          example: ATIVO
+    VendaRequest:
+      type: object
+      description: Abre venda para cliente ativo e vendedor ou gerente ativo
+      properties:
+        clienteId:
+          type: integer
+          format: int64
+          example: 1
+          exclusiveMinimum: 0
+        vendedorId:
+          type: integer
+          format: int64
+          example: 2
+          exclusiveMinimum: 0
+      required:
+      - clienteId
+      - vendedorId
+    ItemVendaResponse:
+      type: object
+      description: Item com preço histórico capturado na inclusão e subtotal calculado
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        instrumentoId:
+          type: integer
+          format: int64
+          example: 1
+        instrumentoNome:
+          type: string
+          example: Violino Eagle
+        quantidade:
+          type: number
+          example: 2
+        valorUnitario:
+          type: number
+          example: 1500.0
+        subtotal:
+          type: number
+          example: 3000.0
+    VendaResponse:
+      type: object
+      description: "Detalhe da venda com itens, preços históricos e total calculado"
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        clienteId:
+          type: integer
+          format: int64
+          example: 1
+        clienteNome:
+          type: string
+          example: Ana Souza
+        vendedorId:
+          type: integer
+          format: int64
+          example: 2
+        vendedorNome:
+          type: string
+          example: Bruno Lima
+        dataVenda:
+          type: string
+          format: date-time
+          example: 2026-10-28T10:30:00
+        status:
+          type: string
+          enum:
+          - ABERTA
+          - FINALIZADA
+          - CANCELADA
+          example: ABERTA
+        itens:
+          type: array
+          description: Itens com preço histórico capturado na inclusão
+          items:
+            $ref: "#/components/schemas/ItemVendaResponse"
+        total:
+          type: number
+          example: 3000.0
+    ItemVendaRequest:
+      type: object
+      description: "Inclusão de instrumento em venda aberta, em unidades inteiras"
+      properties:
+        instrumentoId:
+          type: integer
+          format: int64
+          example: 1
+          exclusiveMinimum: 0
+        quantidade:
+          type: integer
+          format: int32
+          description: "Quantidade inteira positiva de instrumentos; aceita 2 ou 2.000,\
+            \ rejeita frações"
+          example: 2
+          maximum: 2147483647
+          minimum: 1
+          multipleOf: 1
+      required:
+      - instrumentoId
+      - quantidade
+    InstrumentoRequest:
+      type: object
+      description: Dados necessários para cadastrar um instrumento musical
+      properties:
+        codigoInstrumento:
+          type: string
+          description: Código único do instrumento
+          example: INT001
+          maxLength: 50
+          minLength: 0
+        nomeInstrumento:
+          type: string
+          description: Nome do instrumento musical
+          example: Violino
+          maxLength: 150
+          minLength: 0
+        quantidadeEstoque:
+          type: integer
+          format: int32
+          description: Quantidade inicial disponível em estoque
+          example: 10
+          minimum: 0
+        precoUnitario:
+          type: number
+          description: Preço unitário do instrumento
+          example: 1500.0
+          minimum: 0
+        estoqueMinimo:
+          type: number
+          description: Quantidade mínima desejada em estoque
+          example: 2.0
+          minimum: 0
+        categoriaId:
+          type: integer
+          format: int64
+          description: Identificador da categoria do instrumento
+          example: 1
+          exclusiveMinimum: 0
+          minimum: 1
+        fornecedorId:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: "Identificador do fornecedor, quando informado"
+          example: 1
+          exclusiveMinimum: 0
+          minimum: 1
+      required:
+      - categoriaId
+      - codigoInstrumento
+      - estoqueMinimo
+      - nomeInstrumento
+      - precoUnitario
+    MovimentacaoEstoqueRequest:
+      type: object
+      description: Dados necessários para registrar uma entrada ou saída de estoque
+      properties:
+        quantidade:
+          type: number
+          description: Quantidade de instrumentos a movimentar. Deve ser maior que
+            zero
+          example: 5.0
+          exclusiveMinimum: 0
+          minimum: 0
+      required:
+      - quantidade
+    FornecedorRequest:
+      type: object
+      description: Dados necessários para cadastrar um fornecedor de instrumentos
+        musicais
+      properties:
+        razaoSocial:
+          type: string
+          description: Razão social do fornecedor
+          example: Instrumentos Musicais Brasil Ltda
+          maxLength: 150
+          minLength: 0
+        cnpj:
+          type: string
+          description: "CNPJ do fornecedor, com 14 dígitos e dígitos verificadores\
+            \ válidos, sem pontuação"
+          example: "12345678000195"
+          maxLength: 14
+          minLength: 14
+      required:
+      - cnpj
+      - razaoSocial
+    FornecedorResponse:
+      type: object
+      description: Dados de um fornecedor retornados pela API
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador do fornecedor
+          example: 1
+        razaoSocial:
+          type: string
+          description: Razão social do fornecedor
+          example: Instrumentos Musicais Brasil Ltda
+        cnpj:
+          type: string
+          description: CNPJ do fornecedor
+          example: "12345678000195"
+        status:
+          type: string
+          description: Status atual do fornecedor
+          enum:
+          - ATIVO
+          - INATIVO
+          example: ATIVO
+    ColaboradorRequest:
+      type: object
+      description: Cria vínculo profissional para uma pessoa ativa
+      properties:
+        pessoaId:
+          type: integer
+          format: int64
+          example: 1
+          exclusiveMinimum: 0
+        matricula:
+          type: string
+          example: VEN-001
+          maxLength: 30
+          minLength: 0
+        funcao:
+          type: string
+          enum:
+          - VENDEDOR
+          - ESTOQUISTA
+          - GERENTE
+          - ADMINISTRATIVO
+          example: VENDEDOR
+        dataAdmissao:
+          type: string
+          format: date
+          example: 2026-09-29
+      required:
+      - dataAdmissao
+      - funcao
+      - matricula
+      - pessoaId
+    ClienteRequest:
+      type: object
+      description: Associa uma pessoa ativa ao papel de cliente
+      properties:
+        pessoaId:
+          type: integer
+          format: int64
+          example: 1
+          exclusiveMinimum: 0
+        telefone:
+          type: string
+          example: (11) 99999-0000
+          maxLength: 30
+          minLength: 0
+      required:
+      - pessoaId
+    CategoriaInstrumentoRequest:
+      type: object
+      description: Dados necessários para cadastrar uma categoria de instrumentos
+        musicais
+      properties:
+        nome:
+          type: string
+          description: Nome da categoria de instrumentos musicais
+          example: Instrumentos de Sopro
+          maxLength: 120
+          minLength: 0
+      required:
+      - nome
+    PaginaResponseVendaResumoResponse:
+      type: object
+      description: Resposta paginada contendo os resultados da pesquisa e informações
+        de paginação
+      properties:
+        conteudo:
+          type: array
+          description: Lista de registros encontrados na página
+          items:
+            $ref: "#/components/schemas/VendaResumoResponse"
+        pagina:
+          type: integer
+          format: int32
+          description: "Número da página atual, começando em zero"
+          example: 0
+        tamanho:
+          type: integer
+          format: int32
+          description: Quantidade de registros por página
+          example: 20
+        totalElementos:
+          type: integer
+          format: int64
+          description: Quantidade total de registros encontrados
+          example: 45
+        totalPaginas:
+          type: integer
+          format: int32
+          description: Quantidade total de páginas
+          example: 3
+        primeira:
+          type: boolean
+          description: Indica se esta é a primeira página
+          example: true
+        ultima:
+          type: boolean
+          description: Indica se esta é a última página
+          example: false
+    VendaResumoResponse:
+      type: object
+      description: Resumo paginado sem coleção de itens e sem total calculado
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        clienteId:
+          type: integer
+          format: int64
+          example: 1
+        clienteNome:
+          type: string
+          example: Ana Souza
+        vendedorId:
+          type: integer
+          format: int64
+          example: 2
+        vendedorNome:
+          type: string
+          example: Bruno Lima
+        dataVenda:
+          type: string
+          format: date-time
+          example: 2026-10-28T10:30:00
+        status:
+          type: string
+          enum:
+          - ABERTA
+          - FINALIZADA
+          - CANCELADA
+          example: ABERTA
+    PaginaResponsePessoaResponse:
+      type: object
+      description: Resposta paginada contendo os resultados da pesquisa e informações
+        de paginação
+      properties:
+        conteudo:
+          type: array
+          description: Lista de registros encontrados na página
+          items:
+            $ref: "#/components/schemas/PessoaResponse"
+        pagina:
+          type: integer
+          format: int32
+          description: "Número da página atual, começando em zero"
+          example: 0
+        tamanho:
+          type: integer
+          format: int32
+          description: Quantidade de registros por página
+          example: 20
+        totalElementos:
+          type: integer
+          format: int64
+          description: Quantidade total de registros encontrados
+          example: 45
+        totalPaginas:
+          type: integer
+          format: int32
+          description: Quantidade total de páginas
+          example: 3
+        primeira:
+          type: boolean
+          description: Indica se esta é a primeira página
+          example: true
+        ultima:
+          type: boolean
+          description: Indica se esta é a última página
+          example: false
+    PaginaResponseInstrumentoResponse:
+      type: object
+      description: Resposta paginada contendo os resultados da pesquisa e informações
+        de paginação
+      properties:
+        conteudo:
+          type: array
+          description: Lista de registros encontrados na página
+          items:
+            $ref: "#/components/schemas/InstrumentoResponse"
+        pagina:
+          type: integer
+          format: int32
+          description: "Número da página atual, começando em zero"
+          example: 0
+        tamanho:
+          type: integer
+          format: int32
+          description: Quantidade de registros por página
+          example: 20
+        totalElementos:
+          type: integer
+          format: int64
+          description: Quantidade total de registros encontrados
+          example: 45
+        totalPaginas:
+          type: integer
+          format: int32
+          description: Quantidade total de páginas
+          example: 3
+        primeira:
+          type: boolean
+          description: Indica se esta é a primeira página
+          example: true
+        ultima:
+          type: boolean
+          description: Indica se esta é a última página
+          example: false
+    PaginaResponseColaboradorResponse:
+      type: object
+      description: Resposta paginada contendo os resultados da pesquisa e informações
+        de paginação
+      properties:
+        conteudo:
+          type: array
+          description: Lista de registros encontrados na página
+          items:
+            $ref: "#/components/schemas/ColaboradorResponse"
+        pagina:
+          type: integer
+          format: int32
+          description: "Número da página atual, começando em zero"
+          example: 0
+        tamanho:
+          type: integer
+          format: int32
+          description: Quantidade de registros por página
+          example: 20
+        totalElementos:
+          type: integer
+          format: int64
+          description: Quantidade total de registros encontrados
+          example: 45
+        totalPaginas:
+          type: integer
+          format: int32
+          description: Quantidade total de páginas
+          example: 3
+        primeira:
+          type: boolean
+          description: Indica se esta é a primeira página
+          example: true
+        ultima:
+          type: boolean
+          description: Indica se esta é a última página
+          example: false
+    PaginaResponseClienteResponse:
+      type: object
+      description: Resposta paginada contendo os resultados da pesquisa e informações
+        de paginação
+      properties:
+        conteudo:
+          type: array
+          description: Lista de registros encontrados na página
+          items:
+            $ref: "#/components/schemas/ClienteResponse"
+        pagina:
+          type: integer
+          format: int32
+          description: "Número da página atual, começando em zero"
+          example: 0
+        tamanho:
+          type: integer
+          format: int32
+          description: Quantidade de registros por página
+          example: 20
+        totalElementos:
+          type: integer
+          format: int64
+          description: Quantidade total de registros encontrados
+          example: 45
+        totalPaginas:
+          type: integer
+          format: int32
+          description: Quantidade total de páginas
+          example: 3
+        primeira:
+          type: boolean
+          description: Indica se esta é a primeira página
+          example: true
+        ultima:
+          type: boolean
+          description: Indica se esta é a última página
+          example: false
+    PaginaResponseCategoriaInstrumentoResponse:
+      type: object
+      description: Resposta paginada contendo os resultados da pesquisa e informações
+        de paginação
+      properties:
+        conteudo:
+          type: array
+          description: Lista de registros encontrados na página
+          items:
+            $ref: "#/components/schemas/CategoriaInstrumentoResponse"
+        pagina:
+          type: integer
+          format: int32
+          description: "Número da página atual, começando em zero"
+          example: 0
+        tamanho:
+          type: integer
+          format: int32
+          description: Quantidade de registros por página
+          example: 20
+        totalElementos:
+          type: integer
+          format: int64
+          description: Quantidade total de registros encontrados
+          example: 45
+        totalPaginas:
+          type: integer
+          format: int32
+          description: Quantidade total de páginas
+          example: 3
+        primeira:
+          type: boolean
+          description: Indica se esta é a primeira página
+          example: true
+        ultima:
+          type: boolean
+          description: Indica se esta é a última página
+          example: false

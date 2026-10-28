@@ -68,7 +68,7 @@ class Checkpoint8ApiTest {
     void deveAlterarInstrumentoSemModificarCamposControlados() throws Exception {
         var origem = categoria("origem");
         var destino = categoria("destino");
-        var fornecedor = fornecedores.save(new Fornecedor("Fornecedor CP8", "34567890000199"));
+        var fornecedor = fornecedores.save(new Fornecedor("Fornecedor CP8", "34567890000130"));
         var instrumento = instrumento(origem, "CP8-ALTERAR", "original", 5, "0", fornecedor);
         mvc.perform(put("/api/instrumentos/{id}", instrumento.getId()).contentType(MediaType.APPLICATION_JSON)
                 .content(atualizacao(destino.getId())))
@@ -133,7 +133,7 @@ class Checkpoint8ApiTest {
     void deveCombinarTodosOsFiltrosDeInstrumentoECarregarAssociacoes() throws Exception {
         var categoria = categoria("filtros");
         var outra = categoria("filtros outra");
-        var fornecedor = fornecedores.save(new Fornecedor("Fornecedor CP8 filtros", "45678901000177"));
+        var fornecedor = fornecedores.save(new Fornecedor("Fornecedor CP8 filtros", "45678901000175"));
         var alvo = instrumento(categoria, "CP8-F1", "Violino filtros", 2, "3", fornecedor);
         instrumento(categoria, "CP8-F2", "Violino filtros", 3, "3", fornecedor);
         instrumento(categoria, "CP8-F3", "Violino filtros", 1, "3", null);

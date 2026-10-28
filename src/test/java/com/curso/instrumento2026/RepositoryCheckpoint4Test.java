@@ -66,7 +66,7 @@ class RepositoryCheckpoint4Test {
     void deveCarregarRelacionamentosNaPaginaInclusiveFornecedorOpcional() {
         CategoriaInstrumento categoria = categoriaRepository.save(
                 new CategoriaInstrumento(null, "Categoria CP4 pagina"));
-        Fornecedor fornecedor = new Fornecedor("Fornecedor CP4", "87654321000188");
+        Fornecedor fornecedor = new Fornecedor("Fornecedor CP4", "87654321000198");
         entityManager.persist(fornecedor);
         persistirInstrumento("CP4-COM-FORNECEDOR", categoria, fornecedor);
         persistirInstrumento("CP4-SEM-FORNECEDOR", categoria, null);

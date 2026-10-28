@@ -263,6 +263,11 @@ public class InstrumentoController {
             description = "Instrumento não encontrado",
             content = @Content(schema = @Schema(implementation = ApiError.class))
     )
+    @ApiResponse(
+            responseCode = "409",
+            description = "Instrumento vinculado a uma venda; o histórico deve ser preservado",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))
+    )
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
 

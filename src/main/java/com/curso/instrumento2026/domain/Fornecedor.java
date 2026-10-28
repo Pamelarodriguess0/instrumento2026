@@ -44,9 +44,9 @@ public class Fornecedor {
     }
 
     private String validarCnpj(String cnpj) {
-        if (cnpj == null || !cnpj.matches("\\d{14}")) {
+        if (!DocumentoFiscal.cnpjValido(cnpj)) {
             throw new IllegalArgumentException(
-                    "CNPJ deve conter 14 dígitos"
+                    "CNPJ inválido"
             );
         }
 

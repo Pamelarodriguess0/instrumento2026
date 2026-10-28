@@ -93,7 +93,7 @@ class Checkpoint5ServiceTest {
         var antiga = categoria("CP5 antiga");
         var nova = categoria("CP5 nova");
         var instrumento = instrumento(antiga);
-        var fornecedor = new Fornecedor("Fornecedor CP5", "78912345000166");
+        var fornecedor = new Fornecedor("Fornecedor CP5", "78912345000109");
         em.persist(fornecedor);
         instrumentos.alterar(instrumento.getId(), "Nome inicial", new BigDecimal("150.00"),
                 BigDecimal.ONE, antiga.getId(), fornecedor.getId());

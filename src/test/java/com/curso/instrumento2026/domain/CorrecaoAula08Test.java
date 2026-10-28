@@ -82,7 +82,7 @@ class CorrecaoAula08Test {
     @Test
     void devePermitirRemoverFornecedor() {
         var instrumento = instrumento("COD1", new CategoriaInstrumento(null, "Cordas"));
-        var fornecedor = new Fornecedor("Fornecedor", "12345678000199");
+        var fornecedor = new Fornecedor("Fornecedor", "12345678000195");
         instrumento.alterarFornecedor(fornecedor);
         assertSame(fornecedor, instrumento.getFornecedor());
         instrumento.alterarFornecedor(null);

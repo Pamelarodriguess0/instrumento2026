@@ -11,3 +11,6 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/changes/004-unique-nome-categoria-instrumento.yaml
+
+  - include:
+      file: db/changelog/changes/005-pessoas-clientes-vendas.yaml

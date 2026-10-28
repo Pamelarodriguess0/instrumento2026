@@ -39,7 +39,7 @@ class PesquisaCheckpoint6Test {
     void deveAplicarCadaFiltroECombinarTodosNoBanco() {
         var categoria = categorias.cadastrar(new CategoriaInstrumento(null, "CP6 instrumentos"));
         var outra = categorias.cadastrar(new CategoriaInstrumento(null, "CP6 outra"));
-        var fornecedor = new Fornecedor("Fornecedor CP6", "23456789000188");
+        var fornecedor = new Fornecedor("Fornecedor CP6", "23456789000195");
         em.persist(fornecedor);
         var alvo = criar("CP6-A", "CP6 Violino", categoria, fornecedor, 2, "2.5");
         var igual = criar("CP6-B", "CP6 Violao", categoria, null, 3, "3");

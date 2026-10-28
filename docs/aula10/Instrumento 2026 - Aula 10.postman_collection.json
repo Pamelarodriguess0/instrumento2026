@@ -1,0 +1,1508 @@
+{
+  "info": {
+    "name": "Instrumento 2026 - Aula 10",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Execute toda a coleção em ordem no Runner, uma iteração por vez. A primeira requisição gera documentos com DVs válidos, dados exclusivos e limpa IDs de execuções anteriores. Cria apenas dados próprios, preservados ao final para inspeção do histórico. Não exige IDs existentes. Instruções em docs/aula10/POSTMAN.md."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "a10_execucao",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_cpfCliente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_cpfVendedor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_cpfReserva",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_cpfInvalido",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_cnpj",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_emailCliente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_emailVendedor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_matricula",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_dataAdmissao",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_categoriaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_fornecedorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_pessoaClienteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_pessoaVendedorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_clienteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_vendedorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_instrumentoAId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_instrumentoBId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_itemAId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_itemBId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_vendaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_canceladaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_dataVenda",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "a10_snapshot",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Os IDs da coleção prevalecem sobre homônimos em ambientes externos.",
+          "pm.collectionVariables.toObject && Object.keys(pm.collectionVariables.toObject()).filter(k => k.startsWith('a10_')).forEach(k => pm.variables.set(k, pm.collectionVariables.get(k)));",
+          "if (!pm.info.requestName.startsWith('00 -')) {",
+          "  const raw = pm.variables.replaceIn(pm.request.url.toString() + (pm.request.body ? pm.request.body.raw || '' : ''));",
+          "  if (!pm.collectionVariables.get('a10_execucao') || /\\{\\{a10_/.test(raw) || /\\/api\\/[^?]*\\/\\//.test(raw)) {",
+          "    pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error('Execute a coleção inteira desde 00; faltam variáveis desta execução.');",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Inicialização, pessoas e validações",
+      "item": [
+        {
+          "name": "00 - Iniciar execução e conferir API - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health",
+            "description": "Sempre execute primeiro. Reinicializa todas as variáveis e gera CPF/CNPJ matematicamente válidos; não consulta dados sensíveis no console."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const keys = [\"execucao\",\"cpfCliente\",\"cpfVendedor\",\"cpfReserva\",\"cpfInvalido\",\"cnpj\",\"emailCliente\",\"emailVendedor\",\"matricula\",\"dataAdmissao\",\"categoriaId\",\"fornecedorId\",\"pessoaClienteId\",\"pessoaVendedorId\",\"clienteId\",\"vendedorId\",\"instrumentoAId\",\"instrumentoBId\",\"itemAId\",\"itemBId\",\"vendaId\",\"canceladaId\",\"dataVenda\",\"snapshot\"];",
+                  "keys.forEach(k => { pm.collectionVariables.unset('a10_' + k); pm.variables.unset('a10_' + k); });",
+                  "const set = (k,v) => { pm.collectionVariables.set('a10_'+k,v); pm.variables.set('a10_'+k,v); };",
+                  "const run = Date.now().toString(36) + '-' + pm.variables.replaceIn('{{$guid}}').replace(/-/g,'').slice(0,12);",
+                  "set('execucao',run);",
+                  "function dv(base,weights) { const rest = [...base].reduce((s,n,i)=>s+Number(n)*weights[i],0)%11; return rest < 2 ? 0 : 11-rest; }",
+                  "const used = new Set(['52998224725','11144477735','01234567890']);",
+                  "function cpf() { let s; do { const base='8'+Array.from({length:8},()=>Math.floor(Math.random()*10)).join(''); s=base+dv(base,[10,9,8,7,6,5,4,3,2]); s+=dv(s,[11,10,9,8,7,6,5,4,3,2]); } while(used.has(s)); used.add(s); return s; }",
+                  "const c=cpf(); set('cpfCliente',c); set('cpfVendedor',cpf()); set('cpfReserva',cpf()); set('cpfInvalido',c.slice(0,10)+((Number(c[10])+1)%10));",
+                  "let cnpj='8'+Array.from({length:7},()=>Math.floor(Math.random()*10)).join('')+'0001'; cnpj+=dv(cnpj,[5,4,3,2,9,8,7,6,5,4,3,2]); cnpj+=dv(cnpj,[6,5,4,3,2,9,8,7,6,5,4,3,2]); set('cnpj',cnpj);",
+                  "set('emailCliente','aula10.cliente.'+run+'@example.com'); set('emailVendedor','aula10.vendedor.'+run+'@example.com'); set('matricula','A10-'+run);",
+                  "set('dataAdmissao',new Date().toISOString().slice(0,10));",
+                  "// Consulta somente a existência dos CPFs gerados; em colisão, gera outro antes de cadastrar.",
+                  "function conferirCpf(key, tentativa=0) {",
+                  "  pm.sendRequest(pm.variables.replaceIn('{{baseUrl}}')+'/api/pessoas?cpf='+pm.collectionVariables.get('a10_'+key), (err,res) => {",
+                  "    if (err || res.code!==200) { pm.execution.setNextRequest(null); throw new Error('Não foi possível conferir unicidade dos documentos.'); }",
+                  "    if (res.json().totalElementos > 0) { if(tentativa>=5) { pm.execution.setNextRequest(null); throw new Error('Não foi possível gerar CPF livre.'); } set(key,cpf()); conferirCpf(key,tentativa+1); }",
+                  "    else if(key==='cpfCliente') { const atual=pm.collectionVariables.get('a10_cpfCliente'); set('cpfInvalido',atual.slice(0,10)+((Number(atual[10])+1)%10)); }",
+                  "  });",
+                  "}",
+                  "['cpfCliente','cpfVendedor','cpfReserva'].forEach(k=>conferirCpf(k));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "pm.test('Health textual', () => pm.expect(pm.response.text()).to.eql('OK'));",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "01 - Pessoa cliente - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Aula10 Cliente {{a10_execucao}}\",\"email\":\"{{a10_emailCliente}}\",\"cpf\":\"{{a10_cpfCliente}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_pessoaClienteId', r.id);",
+                  "pm.test('Pessoa ativa e CPF preservado', () => { pm.expect(r.status).to.eql('ATIVO'); pm.expect(r.cpf).to.eql(pm.collectionVariables.get('a10_cpfCliente')); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 - CPF com DV inválido - 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "Esperado HTTP 400. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Inválida {{a10_execucao}}\",\"email\":\"invalida.{{a10_execucao}}@example.com\",\"cpf\":\"{{a10_cpfInvalido}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Erro padronizado', () => { pm.expect(r.status).to.eql(400); pm.expect(r.message).to.be.a('string').and.not.empty; });",
+                  "pm.test('Erro associado ao CPF', () => { pm.expect(r.fields).to.have.property('cpf'); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 - CPF duplicado - 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "Esperado HTTP 409. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Duplicada {{a10_execucao}}\",\"email\":\"duplicada.{{a10_execucao}}@example.com\",\"cpf\":\"{{a10_cpfCliente}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Erro padronizado', () => { pm.expect(r.status).to.eql(409); pm.expect(r.message).to.be.a('string').and.not.empty; });",
+                  "pm.test('Conflito de CPF', () => { pm.expect(r.message).to.include('CPF'); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 - E-mail duplicado - 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "Esperado HTTP 409. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Duplicada {{a10_execucao}}\",\"email\":\"{{a10_emailCliente}}\",\"cpf\":\"{{a10_cpfReserva}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Erro padronizado', () => { pm.expect(r.status).to.eql(409); pm.expect(r.message).to.be.a('string').and.not.empty; });",
+                  "pm.test('Conflito de e-mail', () => { pm.expect(r.message).to.include('E-mail'); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 - Pessoa vendedora - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Aula10 Vendedor {{a10_execucao}}\",\"email\":\"{{a10_emailVendedor}}\",\"cpf\":\"{{a10_cpfVendedor}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_pessoaVendedorId', r.id);",
+                  "pm.test('CPF da pessoa vendedora', () => { pm.expect(r.cpf).to.eql(pm.collectionVariables.get('a10_cpfVendedor')); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 - Papel cliente - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/clientes",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pessoaId\":{{a10_pessoaClienteId}},\"telefone\":\"(11) 99999-0010\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_clienteId', r.id);",
+                  "pm.test('Pessoa do cliente', () => { pm.expect(r.pessoaId).to.eql(Number(pm.collectionVariables.get('a10_pessoaClienteId'))); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 - Vínculo vendedor - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/colaboradores",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pessoaId\":{{a10_pessoaVendedorId}},\"matricula\":\"{{a10_matricula}}\",\"funcao\":\"VENDEDOR\",\"dataAdmissao\":\"{{a10_dataAdmissao}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_vendedorId', r.id);",
+                  "pm.test('Vínculo e função', () => { pm.expect(r.pessoaId).to.eql(Number(pm.collectionVariables.get('a10_pessoaVendedorId'))); pm.expect(r.funcao).to.eql('VENDEDOR'); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Categoria, fornecedor e dois instrumentos próprios",
+      "item": [
+        {
+          "name": "08 - Categoria exclusiva - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categorias",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Aula10 {{a10_execucao}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_categoriaId', r.id);",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 - Fornecedor com CNPJ válido - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/fornecedores",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"razaoSocial\":\"Aula10 {{a10_execucao}}\",\"cnpj\":\"{{a10_cnpj}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_fornecedorId', r.id);",
+                  "pm.test('CNPJ preservado', () => { pm.expect(r.cnpj).to.eql(pm.collectionVariables.get('a10_cnpj')); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10A - Instrumento A - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoInstrumento\":\"A10-A-{{a10_execucao}}\",\"nomeInstrumento\":\"Violino A Aula10 {{a10_execucao}}\",\"quantidadeEstoque\":10,\"precoUnitario\":100,\"estoqueMinimo\":1,\"categoriaId\":{{a10_categoriaId}},\"fornecedorId\":{{a10_fornecedorId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_instrumentoAId', r.id);",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(10); pm.expect(r.precoUnitario).to.eql(100); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10B - Instrumento B - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoInstrumento\":\"A10-B-{{a10_execucao}}\",\"nomeInstrumento\":\"Violino B Aula10 {{a10_execucao}}\",\"quantidadeEstoque\":12,\"precoUnitario\":250,\"estoqueMinimo\":1,\"categoriaId\":{{a10_categoriaId}},\"fornecedorId\":{{a10_fornecedorId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_instrumentoBId', r.id);",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(12); pm.expect(r.precoUnitario).to.eql(250); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Venda aberta, remoção, reinclusão e snapshot",
+      "item": [
+        {
+          "name": "11 - Abrir venda - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/vendas",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"clienteId\":{{a10_clienteId}},\"vendedorId\":{{a10_vendedorId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_vendaId', r.id);",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('ABERTA'); pm.expect(r.total).to.eql(0); pm.expect(r.itens).to.have.lengthOf(0); });",
+                  "pm.collectionVariables.set('a10_dataVenda', r.dataVenda.slice(0,10));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "12 - Incluir A com 2 unidades - 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/vendas/{{a10_vendaId}}/itens",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"instrumentoId\":{{a10_instrumentoAId}},\"quantidade\":2}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('ABERTA'); pm.expect(r.total).to.eql(200); pm.expect(r.itens).to.have.lengthOf(1); });",
+                  "pm.collectionVariables.set('a10_itemAId', r.itens.find(i=>i.instrumentoId===Number(pm.collectionVariables.get('a10_instrumentoAId'))).id);",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "13 - Incluir B com 3 unidades - 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/vendas/{{a10_vendaId}}/itens",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"instrumentoId\":{{a10_instrumentoBId}},\"quantidade\":3}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('ABERTA'); pm.expect(r.total).to.eql(950); pm.expect(r.itens).to.have.lengthOf(2); });",
+                  "pm.collectionVariables.set('a10_itemBId', r.itens.find(i=>i.instrumentoId===Number(pm.collectionVariables.get('a10_instrumentoBId'))).id);",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "14 - Remover B da venda aberta - 200",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas/{{a10_vendaId}}/itens/{{a10_itemBId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('ABERTA'); pm.expect(r.total).to.eql(200); pm.expect(r.itens).to.have.lengthOf(1); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "15 - Reincluir B com 3 unidades - 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/vendas/{{a10_vendaId}}/itens",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"instrumentoId\":{{a10_instrumentoBId}},\"quantidade\":3}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('ABERTA'); pm.expect(r.total).to.eql(950); pm.expect(r.itens).to.have.lengthOf(2); });",
+                  "pm.collectionVariables.set('a10_itemBId', r.itens.find(i=>i.instrumentoId===Number(pm.collectionVariables.get('a10_instrumentoBId'))).id);",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "16A - Saldo antes de finalizar - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoAId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(10); pm.expect(r.precoUnitario).to.eql(100); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "16B - Saldo antes de finalizar - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoBId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(12); pm.expect(r.precoUnitario).to.eql(250); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "17 - Alterar somente preço atual de A - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoAId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomeInstrumento\":\"Violino A Aula10 {{a10_execucao}}\",\"precoUnitario\":175,\"estoqueMinimo\":1,\"categoriaId\":{{a10_categoriaId}},\"fornecedorId\":{{a10_fornecedorId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(10); pm.expect(r.precoUnitario).to.eql(175); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "18 - Consultar preço histórico e total - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas/{{a10_vendaId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('ABERTA'); pm.expect(r.total).to.eql(950); pm.expect(r.itens).to.have.lengthOf(2); });",
+                  "pm.test('Snapshot A e B', () => { const a=r.itens.find(i=>i.instrumentoId===Number(pm.collectionVariables.get('a10_instrumentoAId'))); const b=r.itens.find(i=>i.instrumentoId===Number(pm.collectionVariables.get('a10_instrumentoBId'))); pm.expect(a.valorUnitario).to.eql(100); pm.expect(a.subtotal).to.eql(200); pm.expect(b.valorUnitario).to.eql(250); pm.expect(b.subtotal).to.eql(750); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Finalização, baixa única e preservação do histórico",
+      "item": [
+        {
+          "name": "19 - Finalizar venda - 200",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas/{{a10_vendaId}}/finalizacao",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('FINALIZADA'); pm.expect(r.total).to.eql(950); pm.expect(r.itens).to.have.lengthOf(2); });",
+                  "pm.collectionVariables.set('a10_snapshot', JSON.stringify(r));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "20 - Finalizar novamente - 400",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas/{{a10_vendaId}}/finalizacao",
+            "description": "Esperado HTTP 400. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Erro padronizado', () => { pm.expect(r.status).to.eql(400); pm.expect(r.message).to.be.a('string').and.not.empty; });",
+                  "pm.test('Transição proibida', () => { pm.expect(r.message).to.include('Somente vendas abertas'); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "21A - Saldo após baixa única - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoAId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(8); pm.expect(r.precoUnitario).to.eql(175); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "21B - Saldo após baixa única - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoBId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(9); pm.expect(r.precoUnitario).to.eql(250); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "22 - Excluir instrumento vendido - 409",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoAId}}",
+            "description": "Tenta excluir somente o instrumento A criado pela coleção. A FK recusa a operação; nenhum registro preexistente é usado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Erro padronizado', () => { pm.expect(r.status).to.eql(409); pm.expect(r.message).to.be.a('string').and.not.empty; });",
+                  "pm.test('Preservação comercial', () => { pm.expect(r.message).to.include('vinculado a uma venda'); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "23 - Instrumento vendido continua disponível - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoAId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(8); pm.expect(r.precoUnitario).to.eql(175); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "24 - Histórico integral preservado - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas/{{a10_vendaId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Venda idêntica à finalizada', () => { pm.expect(r).to.deep.eql(JSON.parse(pm.collectionVariables.get('a10_snapshot'))); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Segunda venda cancelada sem movimentação",
+      "item": [
+        {
+          "name": "25 - Abrir segunda venda - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/vendas",
+            "description": "Esperado HTTP 201. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"clienteId\":{{a10_clienteId}},\"vendedorId\":{{a10_vendedorId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Location do recurso criado', () => pm.expect(pm.response.headers.get('Location')).to.include('/' + r.id));",
+                  "pm.test('ID retornado', () => pm.expect(r.id).to.be.a('number').above(0));",
+                  "pm.collectionVariables.set('a10_canceladaId', r.id);",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('ABERTA'); pm.expect(r.total).to.eql(0); pm.expect(r.itens).to.have.lengthOf(0); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "26 - Incluir B na segunda venda - 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/vendas/{{a10_canceladaId}}/itens",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"instrumentoId\":{{a10_instrumentoBId}},\"quantidade\":1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('ABERTA'); pm.expect(r.total).to.eql(250); pm.expect(r.itens).to.have.lengthOf(1); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "27 - Cancelar segunda venda - 200",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas/{{a10_canceladaId}}/cancelamento",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('CANCELADA'); pm.expect(r.total).to.eql(250); pm.expect(r.itens).to.have.lengthOf(1); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "28 - Consultar venda cancelada - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas/{{a10_canceladaId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Estado, total e itens', () => { pm.expect(r.status).to.eql('CANCELADA'); pm.expect(r.total).to.eql(250); pm.expect(r.itens).to.have.lengthOf(1); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "29A - Saldo preservado após cancelamento - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoAId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(8); pm.expect(r.precoUnitario).to.eql(175); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "29B - Saldo preservado após cancelamento - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos/{{a10_instrumentoBId}}",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Saldo e preço atual', () => { pm.expect(r.quantidadeEstoque).to.eql(9); pm.expect(r.precoUnitario).to.eql(250); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Filtros e paginação restritos à execução",
+      "item": [
+        {
+          "name": "30 - Filtrar pessoa por CPF e nome - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/pessoas?cpf={{a10_cpfCliente}}&nome={{a10_execucao}}&status=ATIVO&page=0&size=1&sort=id,asc",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Envelope paginado', () => { pm.expect(r.totalElementos).to.eql(1); pm.expect(r.tamanho).to.eql(1); pm.expect(r.conteudo).to.have.lengthOf(1); });",
+                  "pm.test('Pessoa esperada', () => { pm.expect(r.conteudo[0].id).to.eql(Number(pm.collectionVariables.get('a10_pessoaClienteId'))); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "31 - Filtrar cliente - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/clientes?cpf={{a10_cpfCliente}}&nome={{a10_execucao}}&page=0&size=1&sort=id,asc",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Envelope paginado', () => { pm.expect(r.totalElementos).to.eql(1); pm.expect(r.tamanho).to.eql(1); pm.expect(r.conteudo).to.have.lengthOf(1); });",
+                  "pm.test('Cliente esperado', () => { pm.expect(r.conteudo[0].id).to.eql(Number(pm.collectionVariables.get('a10_clienteId'))); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "32 - Filtrar colaborador - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/colaboradores?matricula={{a10_matricula}}&funcao=VENDEDOR&page=0&size=1&sort=id,asc",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Envelope paginado', () => { pm.expect(r.totalElementos).to.eql(1); pm.expect(r.tamanho).to.eql(1); pm.expect(r.conteudo).to.have.lengthOf(1); });",
+                  "pm.test('Vendedor esperado', () => { pm.expect(r.conteudo[0].id).to.eql(Number(pm.collectionVariables.get('a10_vendedorId'))); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "33 - Filtrar venda finalizada e período - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas?clienteId={{a10_clienteId}}&vendedorId={{a10_vendedorId}}&dataInicial={{a10_dataVenda}}&dataFinal={{a10_dataVenda}}&status=FINALIZADA&page=0&size=1&sort=id,asc",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Envelope paginado', () => { pm.expect(r.totalElementos).to.eql(1); pm.expect(r.tamanho).to.eql(1); pm.expect(r.conteudo).to.have.lengthOf(1); });",
+                  "pm.test('Resumo sem itens ou total', () => { pm.expect(r.conteudo[0].id).to.eql(Number(pm.collectionVariables.get('a10_vendaId'))); pm.expect(r.conteudo[0]).not.to.have.property('itens'); pm.expect(r.conteudo[0]).not.to.have.property('total'); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "340 - Página 0 das duas vendas - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas?clienteId={{a10_clienteId}}&vendedorId={{a10_vendedorId}}&page=0&size=1&sort=id,asc",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Envelope paginado', () => { pm.expect(r.totalElementos).to.eql(2); pm.expect(r.tamanho).to.eql(1); pm.expect(r.conteudo).to.have.lengthOf(1); });",
+                  "pm.test('Página e registro esperados', () => { pm.expect(r.pagina).to.eql(0); pm.expect(r.totalPaginas).to.eql(2); pm.expect(r.conteudo[0].id).to.eql(Number(pm.collectionVariables.get('a10_vendaId'))); pm.expect(r.ultima).to.eql(false); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "341 - Página 1 das duas vendas - 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vendas?clienteId={{a10_clienteId}}&vendedorId={{a10_vendedorId}}&page=1&size=1&sort=id,asc",
+            "description": "Esperado HTTP 200. Usa somente registros criados nesta execução."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Status inesperado; cenário interrompido para não reutilizar IDs.'); }",
+                  "const r = pm.response.json();",
+                  "pm.test('Envelope paginado', () => { pm.expect(r.totalElementos).to.eql(2); pm.expect(r.tamanho).to.eql(1); pm.expect(r.conteudo).to.have.lengthOf(1); });",
+                  "pm.test('Página e registro esperados', () => { pm.expect(r.pagina).to.eql(1); pm.expect(r.totalPaginas).to.eql(2); pm.expect(r.conteudo[0].id).to.eql(Number(pm.collectionVariables.get('a10_canceladaId'))); pm.expect(r.ultima).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

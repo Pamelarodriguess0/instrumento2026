@@ -49,7 +49,7 @@ class InstrumentoApiTest {
                 fornecedorRepository.save(
                         new Fornecedor(
                                 "Fornecedor API",
-                                "12345678000199"
+                                "12345678000195"
                         )
                 );
 

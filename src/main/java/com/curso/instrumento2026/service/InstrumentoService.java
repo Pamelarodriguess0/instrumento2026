@@ -5,11 +5,14 @@ import com.curso.instrumento2026.domain.Fornecedor;
 import com.curso.instrumento2026.domain.Instrumento;
 import com.curso.instrumento2026.domain.Status;
 import com.curso.instrumento2026.exception.RecursoDuplicadoException;
+import com.curso.instrumento2026.exception.RecursoEmUsoException;
 import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
 import com.curso.instrumento2026.repository.CategoriaInstrumentoRepository;
 import com.curso.instrumento2026.repository.FornecedorRepository;
 import com.curso.instrumento2026.repository.InstrumentoRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.postgresql.util.PSQLException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -146,8 +149,22 @@ public class InstrumentoService {
     @Transactional
     public void excluir(Long id) {
         Instrumento instrumento = buscarPorId(id);
-        instrumentoRepository.delete(instrumento);
-        instrumentoRepository.flush();
+        try {
+            instrumentoRepository.delete(instrumento);
+            instrumentoRepository.flush();
+        } catch (DataIntegrityViolationException exception) {
+            for (Throwable causa = exception; causa != null; causa = causa.getCause()) {
+                if (causa instanceof PSQLException violacao
+                        && "23503".equals(violacao.getSQLState())
+                        && violacao.getServerErrorMessage() != null
+                        && "fk_item_venda_instrumento".equals(
+                                violacao.getServerErrorMessage().getConstraint())) {
+                    throw new RecursoEmUsoException(
+                            "Instrumento não pode ser excluído porque está vinculado a uma venda");
+                }
+            }
+            throw exception;
+        }
     }
 
     @Transactional

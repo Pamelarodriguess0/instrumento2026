@@ -19,9 +19,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    @ExceptionHandler(IllegalArgumentException.class)
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public ResponseEntity<ApiError> tratarRegraInvalida(
-            IllegalArgumentException exception,
+            RuntimeException exception,
             HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(
                 Instant.now(), HttpStatus.BAD_REQUEST.value(),

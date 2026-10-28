@@ -1504,7 +1504,9 @@
           "if (pm.info.requestName === '00 - Health - 200') {",
           "  const identificador = Date.now().toString() + Math.floor(Math.random()*1000).toString().padStart(3, '0');",
           "  pm.collectionVariables.set('execucao', identificador);",
-          "  pm.collectionVariables.set('cnpj', identificador.slice(-14));",
+          "  const calcularDigito = function (base) { let peso = base.length - 7; let soma = 0; for (const digito of base) { soma += Number(digito) * peso; peso--; if (peso === 1) peso = 9; } const resto = soma % 11; return resto < 2 ? 0 : 11 - resto; };",
+          "  let cnpj = identificador.slice(-12); cnpj += calcularDigito(cnpj); cnpj += calcularDigito(cnpj);",
+          "  pm.collectionVariables.set('cnpj', cnpj);",
           "  pm.collectionVariables.set('codigoInstrumento', 'A08-' + identificador);",
           "}"
         ]
