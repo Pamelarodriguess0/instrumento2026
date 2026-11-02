@@ -2,11 +2,13 @@
 package com.curso.instrumento2026.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
+@DynamicUpdate
 @Table(name = "instrumento")
 public class Instrumento {
 

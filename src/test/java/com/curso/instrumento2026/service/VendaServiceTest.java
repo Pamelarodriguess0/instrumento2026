@@ -19,6 +19,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 // Sem @Transactional no teste: cada chamada de service confirma ou reverte sua própria transação.
@@ -74,6 +80,135 @@ class VendaServiceTest {
 
     private Long abrir() { return service.cadastrar(clienteId, vendedorId).getId(); }
     private int saldo(Long id) { return instrumentos.findById(id).orElseThrow().getQuantidadeEstoque(); }
+
+    @Test
+    void deveFinalizarMesmaVendaApenasUmaVezSobConcorrencia() throws Exception {
+        tx.executeWithoutResult(status -> instrumentos.findById(primeiroId).orElseThrow().adicionarEstoque(5));
+        Long vendaId = abrir();
+        service.adicionarItem(vendaId, primeiroId, new BigDecimal("4"));
+        assertEquals(10, saldo(primeiroId));
+
+        CountDownLatch prontas = new CountDownLatch(2);
+        CountDownLatch inicio = new CountDownLatch(1);
+        Set<Integer> sessoes = ConcurrentHashMap.newKeySet();
+        List<String> resultados;
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            var primeira = executor.submit(() -> finalizarMesmaVenda(vendaId, prontas, inicio, sessoes));
+            var segunda = executor.submit(() -> finalizarMesmaVenda(vendaId, prontas, inicio, sessoes));
+            try {
+                assertTrue(prontas.await(10, TimeUnit.SECONDS), "Ambas devem carregar a mesma venda ABERTA");
+                assertEquals(2, sessoes.size(), "São necessárias duas sessões PostgreSQL independentes");
+            } finally {
+                inicio.countDown();
+            }
+            resultados = List.of(primeira.get(15, TimeUnit.SECONDS), segunda.get(15, TimeUnit.SECONDS));
+        } finally {
+            inicio.countDown();
+            executor.shutdownNow();
+            assertTrue(executor.awaitTermination(15, TimeUnit.SECONDS), "As tarefas devem encerrar antes da limpeza");
+        }
+
+        long aceitas = resultados.stream().filter("sucesso"::equals).count();
+        int saldoFinal = saldo(primeiroId);
+        StatusVenda estadoFinal = service.buscarPorId(vendaId).getStatus();
+        System.out.printf("MESMA VENDA: sessoes=%d, aceitas=%d, resultados=%s, estoque=%d, status=%s%n",
+                sessoes.size(), aceitas, resultados, saldoFinal, estadoFinal);
+        // Contrato esperado: teste de regressão fica vermelho enquanto a duplicidade existir.
+        assertAll(
+                () -> assertEquals(1, aceitas, "Somente uma finalização deve ser aceita"),
+                () -> assertEquals(6, saldoFinal, "Somente quatro unidades devem ser retiradas"),
+                () -> assertEquals(StatusVenda.FINALIZADA, estadoFinal),
+                () -> assertEquals(1, resultados.stream()
+                        .filter("Somente vendas abertas podem ser alteradas"::equals).count(),
+                        "A segunda tentativa deve falhar pelo estado da venda"));
+    }
+
+    private String finalizarMesmaVenda(Long vendaId, CountDownLatch prontas, CountDownLatch inicio,
+                                      Set<Integer> sessoes) {
+        try {
+            var transacao = new TransactionTemplate(transactionManager);
+            transacao.setTimeout(10);
+            transacao.executeWithoutResult(status -> {
+                jdbc.execute("SET LOCAL lock_timeout = '5s'");
+                jdbc.execute("SET LOCAL statement_timeout = '8s'");
+                sessoes.add(jdbc.queryForObject("SELECT pg_backend_pid()", Integer.class));
+                Venda venda = vendas.findOneById(vendaId).orElseThrow();
+                assertEquals(StatusVenda.ABERTA, venda.getStatus());
+                assertEquals(10, venda.getItens().getFirst().getInstrumento().getQuantidadeEstoque());
+                prontas.countDown();
+                try {
+                    assertTrue(inicio.await(10, TimeUnit.SECONDS), "Sinal de início não recebido");
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(exception);
+                }
+                service.finalizar(vendaId);
+            });
+            return "sucesso";
+        } catch (IllegalStateException exception) {
+            return exception.getMessage();
+        }
+    }
+
+    @Test
+    void deveImpedirVendaAcimaDoSaldoEmFinalizacoesConcorrentes() throws Exception {
+        Long primeira = abrir();
+        Long segunda = abrir();
+        service.adicionarItem(primeira, primeiroId, new BigDecimal("4"));
+        service.adicionarItem(segunda, primeiroId, new BigDecimal("4"));
+        assertEquals(5, saldo(primeiroId));
+
+        CountDownLatch prontas = new CountDownLatch(2);
+        CountDownLatch inicio = new CountDownLatch(1);
+        List<ResultadoFinalizacao> resultados;
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var primeiro = executor.submit(() -> finalizarConcorrentemente(primeira, prontas, inicio));
+            var segundo = executor.submit(() -> finalizarConcorrentemente(segunda, prontas, inicio));
+            try {
+                assertTrue(prontas.await(10, TimeUnit.SECONDS), "As duas transações devem carregar o saldo inicial");
+            } finally {
+                inicio.countDown();
+            }
+            resultados = List.of(primeiro.get(10, TimeUnit.SECONDS), segundo.get(10, TimeUnit.SECONDS));
+        }
+
+        assertEquals(1, resultados.stream().filter(ResultadoFinalizacao::sucesso).count());
+        assertEquals(1, resultados.stream().filter(resultado -> !resultado.sucesso()).count());
+        // Consultas após o término das duas transações, sem reutilizar suas entidades gerenciadas.
+        for (ResultadoFinalizacao resultado : resultados) {
+            assertEquals(resultado.sucesso() ? StatusVenda.FINALIZADA : StatusVenda.ABERTA,
+                    service.buscarPorId(resultado.vendaId()).getStatus());
+            if (!resultado.sucesso()) assertEquals("Estoque insuficiente", resultado.mensagem());
+        }
+        // Somente as quatro unidades da vencedora foram baixadas; a perdedora não consumiu estoque.
+        assertEquals(1, saldo(primeiroId));
+    }
+
+    private ResultadoFinalizacao finalizarConcorrentemente(Long vendaId, CountDownLatch prontas,
+                                                           CountDownLatch inicio) {
+        try {
+            // Cada thread tem sua própria transação/contexto; o service participa dela pelo proxy Spring.
+            new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+                Venda venda = vendas.findOneById(vendaId).orElseThrow();
+                assertEquals(5, venda.getItens().getFirst().getInstrumento().getQuantidadeEstoque());
+                prontas.countDown();
+                try {
+                    assertTrue(inicio.await(10, TimeUnit.SECONDS), "Sinal de início não recebido");
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Finalização concorrente interrompida", exception);
+                }
+                service.finalizar(vendaId);
+            });
+            return new ResultadoFinalizacao(vendaId, true, null);
+        } catch (IllegalArgumentException exception) {
+            // A exceção atravessou o limite transacional: o rollback já ocorreu.
+            return new ResultadoFinalizacao(vendaId, false, exception.getMessage());
+        }
+    }
+
+    private record ResultadoFinalizacao(Long vendaId, boolean sucesso, String mensagem) {}
 
     @Test
     void deveFinalizarBaixandoCadaItemUmaVezEPreservandoPrecoHistorico() {

@@ -3,6 +3,8 @@ package com.curso.instrumento2026.service;
 import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
 import com.curso.instrumento2026.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -11,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -19,13 +23,16 @@ public class VendaService {
     private final ClienteRepository clienteRepository;
     private final ColaboradorRepository colaboradorRepository;
     private final InstrumentoRepository instrumentoRepository;
+    private final EntityManager entityManager;
 
     public VendaService(VendaRepository repository, ClienteRepository clienteRepository,
-                        ColaboradorRepository colaboradorRepository, InstrumentoRepository instrumentoRepository) {
+                        ColaboradorRepository colaboradorRepository, InstrumentoRepository instrumentoRepository,
+                        EntityManager entityManager) {
         this.repository = repository;
         this.clienteRepository = clienteRepository;
         this.colaboradorRepository = colaboradorRepository;
         this.instrumentoRepository = instrumentoRepository;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -69,16 +76,30 @@ public class VendaService {
 
     @Transactional
     public Venda finalizar(Long id) {
-        Venda venda = buscarEntidade(id);
-        if (venda.getStatus() != StatusVenda.ABERTA) {
+        // A projeção consulta o estado atual e bloqueia somente a venda, sem o EntityGraph
+        // nem o refresh em cascata dos itens. A entidade já gerenciada pode estar desatualizada.
+        StatusVenda statusAtual = entityManager.createQuery(
+                        "select v.status from Venda v where v.id = :id", StatusVenda.class)
+                .setParameter("id", id)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultList().stream()
+                .findFirst()
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Venda não encontrada"));
+        if (statusAtual != StatusVenda.ABERTA) {
             throw new IllegalStateException("Somente vendas abertas podem ser alteradas");
         }
+        Venda venda = buscarEntidade(id);
         validarParticipantes(venda.getCliente(), venda.getVendedor());
-        for (ItemVenda item : venda.getItens()) {
-            if (item.getInstrumento().getStatus() != Status.ATIVO) {
+        List<ItemVenda> itensOrdenados = venda.getItens().stream()
+                .sorted(Comparator.comparing(item -> item.getInstrumento().getId()))
+                .toList();
+        for (ItemVenda item : itensOrdenados) {
+            Instrumento instrumento = item.getInstrumento();
+            entityManager.refresh(instrumento, LockModeType.PESSIMISTIC_WRITE);
+            if (instrumento.getStatus() != Status.ATIVO) {
                 throw new IllegalArgumentException("Todos os instrumentos da venda devem estar ativos");
             }
-            item.getInstrumento().retirarEstoque(item.getQuantidade().intValueExact());
+            instrumento.retirarEstoque(item.getQuantidade().intValueExact());
         }
         venda.finalizar();
         return venda;

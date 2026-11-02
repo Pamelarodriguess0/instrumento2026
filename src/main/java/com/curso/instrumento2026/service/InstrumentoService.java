@@ -10,6 +10,9 @@ import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
 import com.curso.instrumento2026.repository.CategoriaInstrumentoRepository;
 import com.curso.instrumento2026.repository.FornecedorRepository;
 import com.curso.instrumento2026.repository.InstrumentoRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import org.hibernate.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.postgresql.util.PSQLException;
@@ -65,15 +68,18 @@ public class InstrumentoService {
     private final InstrumentoRepository instrumentoRepository;
     private final CategoriaInstrumentoRepository categoriaRepository;
     private final FornecedorRepository fornecedorRepository;
+    private final EntityManager entityManager;
 
     public InstrumentoService(
             InstrumentoRepository instrumentoRepository,
             CategoriaInstrumentoRepository categoriaRepository,
-            FornecedorRepository fornecedorRepository) {
+            FornecedorRepository fornecedorRepository,
+            EntityManager entityManager) {
 
         this.instrumentoRepository = instrumentoRepository;
         this.categoriaRepository = categoriaRepository;
         this.fornecedorRepository = fornecedorRepository;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -170,6 +176,7 @@ public class InstrumentoService {
     @Transactional
     public Instrumento receberEstoque(Long id, BigDecimal quantidade) {
         Instrumento instrumento = buscarPorId(id);
+        atualizarEstoqueComBloqueio(instrumento);
         instrumento.adicionarEstoque(quantidadeInteira(quantidade));
         return instrumento;
     }
@@ -177,8 +184,19 @@ public class InstrumentoService {
     @Transactional
     public Instrumento retirarEstoque(Long id, BigDecimal quantidade) {
         Instrumento instrumento = buscarPorId(id);
+        atualizarEstoqueComBloqueio(instrumento);
         instrumento.retirarEstoque(quantidadeInteira(quantidade));
         return instrumento;
+    }
+
+    private void atualizarEstoqueComBloqueio(Instrumento instrumento) {
+        entityManager.lock(instrumento, LockModeType.PESSIMISTIC_WRITE);
+        // Preserva mudanças locais antes do refresh, já sob o bloqueio da linha.
+        // DynamicUpdate evita que alterações de outros atributos regravem um saldo antigo.
+        if (entityManager.unwrap(Session.class).isDirty()) {
+            entityManager.flush();
+        }
+        entityManager.refresh(instrumento, LockModeType.PESSIMISTIC_WRITE);
     }
 
     private int quantidadeInteira(BigDecimal quantidade) {

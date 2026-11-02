@@ -278,7 +278,8 @@ public class InstrumentoController {
 
     @Operation(
             summary = "Registrar entrada de estoque",
-            description = "Adiciona uma quantidade ao estoque de um instrumento musical."
+            description = "Utiliza bloqueio pessimista no instrumento durante a transação e recarrega o saldo antes de adicionar "
+                    + "uma quantidade inteira positiva. Repetir a chamada repete o efeito."
     )
     @ApiResponse(
             responseCode = "200",
@@ -306,7 +307,8 @@ public class InstrumentoController {
 
     @Operation(
             summary = "Registrar saída de estoque",
-            description = "Retira uma quantidade do estoque de um instrumento musical."
+            description = "Utiliza bloqueio pessimista no instrumento durante a transação e recarrega o saldo antes de retirar "
+                    + "uma quantidade inteira positiva, sem permitir saldo negativo. Repetir a chamada repete o efeito."
     )
     @ApiResponse(
             responseCode = "200",

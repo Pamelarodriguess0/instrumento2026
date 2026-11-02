@@ -3,6 +3,7 @@ package com.curso.instrumento2026.service;
 import com.curso.instrumento2026.domain.Instrumento;
 import com.curso.instrumento2026.exception.RecursoEmUsoException;
 import com.curso.instrumento2026.repository.InstrumentoRepository;
+import jakarta.persistence.EntityManager;
 import org.hibernate.exception.ConstraintViolationException;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.ServerErrorMessage;
@@ -19,7 +20,8 @@ import static org.mockito.Mockito.*;
 
 class InstrumentoExclusaoTest {
     private final InstrumentoRepository repository = mock(InstrumentoRepository.class);
-    private final InstrumentoService service = new InstrumentoService(repository, null, null);
+    private final InstrumentoService service = new InstrumentoService(repository, null, null,
+            mock(EntityManager.class));
 
     private DataIntegrityViolationException falharExclusao(String constraint) {
         when(repository.findById(1L)).thenReturn(Optional.of(mock(Instrumento.class)));

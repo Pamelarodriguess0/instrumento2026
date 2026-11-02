@@ -96,7 +96,10 @@ public class VendaController {
     }
 
     @Operation(summary = "Finalizar venda e baixar estoque",
-            description = "Somente venda aberta e não vazia, com participantes habilitados, instrumentos ativos e saldo suficiente. As baixas são atômicas; falhas preservam os saldos e a venda aberta. Repetir a finalização retorna 400 sem nova baixa.")
+            description = "Somente venda aberta e não vazia, com participantes habilitados, instrumentos ativos e saldo suficiente. "
+                    + "Os instrumentos são bloqueados com bloqueio pessimista em ordem crescente de ID durante a transação, "
+                    + "recarregando o saldo antes da baixa e evitando que duas vendas consumam o mesmo estoque disponível. "
+                    + "As baixas são atômicas; falhas preservam os saldos e a venda aberta. Repetir a finalização retorna 400 sem nova baixa.")
     @ApiResponse(responseCode = "200", description = "Venda finalizada")
     @ApiResponse(responseCode = "400", description = "Dados ou regra de negócio inválidos",
         content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))

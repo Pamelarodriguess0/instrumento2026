@@ -150,11 +150,29 @@ class OpenApiDocumentationTest {
     }
 
     @Test
-    void exportacaoDaAula10DeveCorresponderAoContratoPublicado() throws Exception {
+    void exportacaoDaAula10DevePreservarContratoExcetoDescricoesDeConcorrencia() throws Exception {
         String yaml = mvc.perform(get("/v3/api-docs.yaml")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         var publicado = Yaml.mapper().readTree(yaml);
         var exportado = Yaml.mapper().readTree(Files.readString(Path.of("docs/aula10/openapi.yaml")));
+        // A Aula 11 altera somente estas descrições; o restante do contrato da Aula 10 deve permanecer igual.
+        for (String rota : List.of("/api/vendas/{id}/finalizacao",
+                "/api/instrumentos/{id}/estoque/entradas", "/api/instrumentos/{id}/estoque/saidas")) {
+            var operacao = publicado.get("paths").get(rota).get("post");
+            String descricao = operacao.get("description").asText();
+            assertTrue(descricao.contains("bloqueio pessimista"), rota);
+            assertTrue(descricao.contains("transação"), rota);
+            if (rota.equals("/api/vendas/{id}/finalizacao")) {
+                assertTrue(descricao.contains("ordem crescente de ID"));
+                assertTrue(descricao.contains("evitando que duas vendas consumam o mesmo estoque"));
+            } else {
+                assertTrue(descricao.contains("quantidade inteira positiva"));
+                assertTrue(descricao.contains("Repetir a chamada repete o efeito"));
+                if (rota.endsWith("/saidas")) assertTrue(descricao.contains("sem permitir saldo negativo"));
+            }
+            ((com.fasterxml.jackson.databind.node.ObjectNode) operacao).put("description",
+                    exportado.get("paths").get(rota).get("post").get("description").asText());
+        }
         assertEquals(publicado.get("paths"), exportado.get("paths"));
         assertEquals(publicado.get("components"), exportado.get("components"));
         assertEquals(publicado.get("info"), exportado.get("info"));
