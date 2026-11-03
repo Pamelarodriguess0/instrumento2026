@@ -150,12 +150,22 @@ class OpenApiDocumentationTest {
     }
 
     @Test
-    void exportacaoDaAula10DevePreservarContratoExcetoDescricoesDeConcorrencia() throws Exception {
+    void exportacaoDaAula10DevePreservarContratoComAdicoesExplicitasDaAula12() throws Exception {
         String yaml = mvc.perform(get("/v3/api-docs.yaml")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         var publicado = Yaml.mapper().readTree(yaml);
         var exportado = Yaml.mapper().readTree(Files.readString(Path.of("docs/aula10/openapi.yaml")));
-        // A Aula 11 altera somente estas descrições; o restante do contrato da Aula 10 deve permanecer igual.
+        assertEquals(Yaml.mapper().readTree("[{\"basicAuth\":[]}]"), publicado.get("security"));
+        var esquemasSeguranca = ((com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("components"))
+                .remove("securitySchemes");
+        assertEquals(Yaml.mapper().readTree("{\"basicAuth\":{\"type\":\"http\",\"scheme\":\"basic\"}}"), esquemasSeguranca);
+        // As duas operações históricas públicas retiram explicitamente a exigência global.
+        for (var publica : Map.of("/api/health", "get", "/api/pessoas", "post").entrySet()) {
+            var operacao = (com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("paths")
+                    .get(publica.getKey()).get(publica.getValue());
+            assertEquals(Yaml.mapper().readTree("[]"), operacao.remove("security"), publica.getKey());
+        }
+        // A Aula 11 altera somente estas três descrições do contrato histórico.
         for (String rota : List.of("/api/vendas/{id}/finalizacao",
                 "/api/instrumentos/{id}/estoque/entradas", "/api/instrumentos/{id}/estoque/saidas")) {
             var operacao = publicado.get("paths").get(rota).get("post");
@@ -173,9 +183,111 @@ class OpenApiDocumentationTest {
             ((com.fasterxml.jackson.databind.node.ObjectNode) operacao).put("description",
                     exportado.get("paths").get(rota).get("post").get("description").asText());
         }
-        assertEquals(publicado.get("paths"), exportado.get("paths"));
-        assertEquals(publicado.get("components"), exportado.get("components"));
+        // Remover somente adições explicitamente conhecidas da cópia em memória.
+        // A igualdade integral restante protege métodos, operationId, parâmetros, respostas e schemas antigos.
+        var caminhos = (com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("paths");
+        for (var novaOperacao : Map.of("/api/contas-acesso", "post",
+                "/api/contas-acesso/me", "get", "/api/contas-acesso/me/senha", "put").entrySet()) {
+            assertFalse(exportado.get("paths").has(novaOperacao.getKey()));
+            var caminho = caminhos.remove(novaOperacao.getKey());
+            assertNotNull(caminho, novaOperacao.getKey());
+            assertEquals(1, caminho.size(), novaOperacao.getKey());
+            assertTrue(caminho.has(novaOperacao.getValue()), novaOperacao.getKey());
+        }
+        var schemas = (com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("components").get("schemas");
+        for (String novoSchema : List.of("ContaAcessoRequest", "ContaAcessoResponse", "AlterarSenhaContaRequest")) {
+            assertFalse(exportado.get("components").get("schemas").has(novoSchema));
+            assertNotNull(schemas.remove(novoSchema), novoSchema);
+        }
+        assertEquals(exportado.get("paths"), caminhos);
+        assertEquals(exportado.get("components"), publicado.get("components"));
         assertEquals(publicado.get("info"), exportado.get("info"));
+    }
+
+    @Test
+    void devePublicarBasicGlobalComExcecoesSomenteNasTresOperacoesPublicas() throws Exception {
+        var resposta = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+        var documento = Yaml.mapper().readTree(resposta.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        var basic = Yaml.mapper().readTree("[{\"basicAuth\":[]}]");
+        assertEquals(basic, documento.get("security"));
+        assertEquals(Yaml.mapper().readTree("{\"basicAuth\":{\"type\":\"http\",\"scheme\":\"basic\"}}"),
+                documento.get("components").get("securitySchemes"));
+        Set<String> publicas = Set.of("get /api/health", "post /api/pessoas", "post /api/contas-acesso");
+        Set<String> encontradas = new java.util.HashSet<>();
+        documento.get("paths").fields().forEachRemaining(rota -> rota.getValue().fields().forEachRemaining(metodo -> {
+            String operacao = metodo.getKey() + " " + rota.getKey();
+            var seguranca = metodo.getValue().has("security") ? metodo.getValue().get("security") : documento.get("security");
+            if (publicas.contains(operacao)) {
+                assertNotNull(metodo.getValue().get("security"), operacao);
+                assertTrue(seguranca.isArray() && seguranca.isEmpty(), operacao);
+                encontradas.add(operacao);
+            } else {
+                assertEquals(basic, seguranca, operacao);
+            }
+        }));
+        assertEquals(publicas, encontradas);
+        mvc.perform(get("/v3/api-docs/swagger-config")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value("/v3/api-docs"));
+        mvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "/api/contas-acesso|post|ContaAcessoRequest|201|ContaAcessoResponse|201,400,404,409",
+            "/api/contas-acesso/me|get|nenhum|200|ContaAcessoResponse|200,401,404",
+            "/api/contas-acesso/me/senha|put|AlterarSenhaContaRequest|204|nenhum|204,400,401,404"
+    })
+    void deveDocumentarOperacoesDeContaComDtosECodigosReais(String rota, String metodo, String entrada,
+                                                         String sucesso, String saida, String codigos) throws Exception {
+        var resposta = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+        var documento = Yaml.mapper().readTree(resposta.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        var operacao = documento.get("paths").get(rota).get(metodo);
+        assertFalse(operacao.get("description").asText().isBlank());
+        Set<String> retornos = new java.util.HashSet<>();
+        operacao.get("responses").fieldNames().forEachRemaining(retornos::add);
+        assertEquals(Set.of(codigos.split(",")), retornos);
+        if (entrada.equals("nenhum")) {
+            assertFalse(operacao.has("requestBody"));
+        } else {
+            assertEquals("#/components/schemas/" + entrada,
+                    operacao.at("/requestBody/content/application~1json/schema/$ref").asText());
+            assertTrue(operacao.at("/requestBody/required").asBoolean());
+        }
+        if (saida.equals("nenhum")) {
+            assertFalse(operacao.get("responses").get(sucesso).has("content"));
+        } else {
+            assertEquals("#/components/schemas/" + saida,
+                    operacao.get("responses").get(sucesso).at("/content/application~1json/schema/$ref").asText());
+        }
+        for (String codigo : retornos) {
+            var retorno = operacao.get("responses").get(codigo);
+            if (codigo.equals("401")) {
+                assertFalse(retorno.has("content"));
+                assertTrue(retorno.get("description").asText().contains("filtros de segurança"));
+            } else if (Set.of("400", "404", "409").contains(codigo)) {
+                assertEquals("#/components/schemas/ApiError", retorno.at("/content/application~1json/schema/$ref").asText());
+            }
+        }
+    }
+
+    @Test
+    void schemasDeContaDevemManterCredenciaisSomenteNaEntrada() throws Exception {
+        var resposta = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+        var documento = Yaml.mapper().readTree(resposta.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        var schemas = documento.get("components").get("schemas");
+        Set<String> propriedades = new java.util.HashSet<>();
+        schemas.get("ContaAcessoResponse").get("properties").fieldNames().forEachRemaining(propriedades::add);
+        assertEquals(Set.of("id", "pessoaId", "nomePessoa", "login", "status", "perfis"), propriedades);
+        assertFalse(schemas.toString().contains("senhaHash"));
+        assertFalse(schemas.toString().contains("senha_hash"));
+        for (var entrada : Map.of("ContaAcessoRequest", List.of("senha"),
+                "AlterarSenhaContaRequest", List.of("senhaAtual", "novaSenha")).entrySet()) {
+            for (String campo : entrada.getValue()) {
+                var propriedade = schemas.get(entrada.getKey()).get("properties").get(campo);
+                assertTrue(propriedade.get("writeOnly").asBoolean(), campo);
+                assertEquals("password", propriedade.get("format").asText());
+            }
+        }
     }
 
     @Test

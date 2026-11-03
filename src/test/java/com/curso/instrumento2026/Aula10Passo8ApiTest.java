@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 // Sem transação no teste: verifica mapeamento com OSIV desativado e rollback real do service.
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class Aula10Passo8ApiTest {
     @Autowired MockMvc mvc;

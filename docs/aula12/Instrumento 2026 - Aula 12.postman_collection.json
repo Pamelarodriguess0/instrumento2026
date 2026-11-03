@@ -1,0 +1,1377 @@
+{
+  "info": {
+    "name": "Instrumento 2026 - Aula 12",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Laboratório local da Aula 12. Basic herdado; noauth nas operações públicas e testes anônimos. Leia docs/aula12/POSTMAN.md: execute 01 e 02, prepare a conta bloqueada via SQL e depois 03–07. Apenas credenciais fictícias. Cada execução cria dados exclusivos; não usar em produção. Não há endpoint HTTP de bloqueio nesta aula."
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{authLogin}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{authPassword}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "authLogin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authPassword",
+      "value": "Aula12-Somente-Teste-2026!",
+      "type": "string"
+    },
+    {
+      "key": "nextAuthPassword",
+      "value": "Aula12-Nova-Somente-Teste-2026!",
+      "type": "string"
+    },
+    {
+      "key": "oldAuthPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blockedLogin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blockedPassword",
+      "value": "Aula12-Somente-Teste-2026!",
+      "type": "string"
+    },
+    {
+      "key": "inactiveLogin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "inactivePassword",
+      "value": "Aula12-Somente-Teste-2026!",
+      "type": "string"
+    },
+    {
+      "key": "blockedFixtureReady",
+      "value": "false",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pessoaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blockedPessoaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blockedContaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "inactivePessoaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "inactiveContaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reservaPessoaId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 — Infraestrutura",
+      "description": "Inicia uma execução exclusiva e limpa IDs antigos. Execute uma vez por execução.",
+      "item": [
+        {
+          "name": "Health público e inicialização",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.variables.replaceIn('{{$guid}}').replace(/-/g,'');",
+                  "pm.collectionVariables.set('runId',token);",
+                  "pm.collectionVariables.set('authLogin','a12.operador.'+token);",
+                  "pm.collectionVariables.set('blockedLogin','a12.bloqueada.'+token);",
+                  "pm.collectionVariables.set('inactiveLogin','a12.inativa.'+token);",
+                  "pm.collectionVariables.set('authPassword','Aula12-Somente-Teste-2026!');",
+                  "pm.collectionVariables.set('oldAuthPassword','');",
+                  "pm.collectionVariables.set('blockedFixtureReady','false');",
+                  "['pessoaId','contaId','blockedPessoaId','blockedContaId','inactivePessoaId','inactiveContaId','reservaPessoaId'].forEach(k=>pm.collectionVariables.set(k,''));",
+                  "function cpf() {",
+                  " let a=Array.from({length:9},()=>Math.floor(Math.random()*10));",
+                  " if(new Set(a).size===1) a[0]=(a[0]+1)%10;",
+                  " for(let n=9;n<11;n++){let soma=0;for(let j=0;j<n;j++)soma+=a[j]*(n+1-j);let d=11-soma%11;a.push(d>=10?0:d);}",
+                  " return a.join('');",
+                  "}",
+                  "['principal','bloqueada','inativa','reserva'].forEach(k=>pm.collectionVariables.set('cpf_'+k,cpf()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Health OK',()=>pm.expect(pm.response.text()).to.eql('OK'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OpenAPI público com basicAuth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v3/api-docs",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Esquema HTTP Basic',()=>{const s=pm.response.json().components.securitySchemes.basicAuth;pm.expect(s.type).to.eql('http');pm.expect(s.scheme).to.eql('basic');});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 — Preparação das contas",
+      "description": "Cria dados exclusivos, incluindo reserva sem conta. Confirma Basic das três contas ATIVAS. Após esta pasta, prepare o bloqueio via SQL conforme POSTMAN.md, antes de continuar.",
+      "item": [
+        {
+          "name": "Criar Pessoa principal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Postman Aula12 principal {{runId}}\",\n  \"email\": \"a12.principal.{{runId}}@example.com\",\n  \"cpf\": \"{{cpf_principal}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "if(pm.response.code===201)pm.collectionVariables.set('pessoaId',String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Pessoa bloqueada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Postman Aula12 bloqueada {{runId}}\",\n  \"email\": \"a12.bloqueada.{{runId}}@example.com\",\n  \"cpf\": \"{{cpf_bloqueada}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "if(pm.response.code===201)pm.collectionVariables.set('blockedPessoaId',String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Pessoa inativa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Postman Aula12 inativa {{runId}}\",\n  \"email\": \"a12.inativa.{{runId}}@example.com\",\n  \"cpf\": \"{{cpf_inativa}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "if(pm.response.code===201)pm.collectionVariables.set('inactivePessoaId',String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Pessoa reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Postman Aula12 reserva {{runId}}\",\n  \"email\": \"a12.reserva.{{runId}}@example.com\",\n  \"cpf\": \"{{cpf_reserva}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "if(pm.response.code===201)pm.collectionVariables.set('reservaPessoaId',String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Conta principal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/contas-acesso",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{pessoaId}},\n  \"login\": \"{{authLogin}}\",\n  \"senha\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "if(pm.response.code===201)pm.collectionVariables.set('contaId',String(pm.response.json().id));",
+                  "pm.test('DTO sem credenciais; conta OPERADOR ATIVA',()=>{",
+                  " const b=pm.response.json();pm.expect(Object.keys(b).sort()).to.eql(['id','pessoaId','nomePessoa','login','status','perfis'].sort());",
+                  " pm.expect(b.status).to.eql('ATIVA');pm.expect(b.perfis).to.eql(['OPERADOR']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Conta bloqueada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/contas-acesso",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{blockedPessoaId}},\n  \"login\": \"{{blockedLogin}}\",\n  \"senha\": \"{{blockedPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "if(pm.response.code===201)pm.collectionVariables.set('blockedContaId',String(pm.response.json().id));",
+                  "pm.test('DTO sem credenciais; conta OPERADOR ATIVA',()=>{",
+                  " const b=pm.response.json();pm.expect(Object.keys(b).sort()).to.eql(['id','pessoaId','nomePessoa','login','status','perfis'].sort());",
+                  " pm.expect(b.status).to.eql('ATIVA');pm.expect(b.perfis).to.eql(['OPERADOR']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Conta inativa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/contas-acesso",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{inactivePessoaId}},\n  \"login\": \"{{inactiveLogin}}\",\n  \"senha\": \"{{inactivePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "if(pm.response.code===201)pm.collectionVariables.set('inactiveContaId',String(pm.response.json().id));",
+                  "pm.test('DTO sem credenciais; conta OPERADOR ATIVA',()=>{",
+                  " const b=pm.response.json();pm.expect(Object.keys(b).sort()).to.eql(['id','pessoaId','nomePessoa','login','status','perfis'].sort());",
+                  " pm.expect(b.status).to.eql('ATIVA');pm.expect(b.perfis).to.eql(['OPERADOR']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar conta principal autenticada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('DTO sem credenciais; conta OPERADOR ATIVA',()=>{",
+                  " const b=pm.response.json();pm.expect(Object.keys(b).sort()).to.eql(['id','pessoaId','nomePessoa','login','status','perfis'].sort());",
+                  " pm.expect(b.status).to.eql('ATIVA');pm.expect(b.perfis).to.eql(['OPERADOR']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar credenciais da futura conta bloqueada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{blockedLogin}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{blockedPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('DTO sem credenciais; conta OPERADOR ATIVA',()=>{",
+                  " const b=pm.response.json();pm.expect(Object.keys(b).sort()).to.eql(['id','pessoaId','nomePessoa','login','status','perfis'].sort());",
+                  " pm.expect(b.status).to.eql('ATIVA');pm.expect(b.perfis).to.eql(['OPERADOR']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar credenciais da futura Pessoa inativa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{inactiveLogin}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{inactivePassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('DTO sem credenciais; conta OPERADOR ATIVA',()=>{",
+                  " const b=pm.response.json();pm.expect(Object.keys(b).sort()).to.eql(['id','pessoaId','nomePessoa','login','status','perfis'].sort());",
+                  " pm.expect(b.status).to.eql('ATIVA');pm.expect(b.perfis).to.eql(['OPERADOR']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 — Acesso comercial",
+      "description": "HTTP Basic herdado da coleção; casos anônimos usam noauth explícito.",
+      "item": [
+        {
+          "name": "Consultar instrumentos com autenticação",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar instrumentos sem autenticação",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Senha incorreta",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{authLogin}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "Senha-Incorreta-Aula12!",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consulta própria sem autenticação",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 — Validações e conflitos",
+      "description": "Usa apenas Pessoas preparadas na pasta 02; não depende de contas preexistentes.",
+      "item": [
+        {
+          "name": "Login duplicado em outra Pessoa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/contas-acesso",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{reservaPessoaId}},\n  \"login\": \"{{authLogin}}\",\n  \"senha\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Conflito de login',()=>pm.expect(pm.response.json().message).to.eql('Login já cadastrado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Segunda conta da mesma Pessoa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/contas-acesso",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{pessoaId}},\n  \"login\": \"a12.segunda.{{runId}}\",\n  \"senha\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Conflito de Pessoa',()=>pm.expect(pm.response.json().message).to.eql('Pessoa já possui conta de acesso'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Senha menor que 12 caracteres",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/contas-acesso",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{reservaPessoaId}},\n  \"login\": \"a12.curta.{{runId}}\",\n  \"senha\": \"curta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Validação sem refletir a senha',()=>{pm.expect(pm.response.json().fields).to.have.property('senha');pm.expect(pm.response.text()).not.to.include('\"curta\"');});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Senha acima de 72 bytes UTF-8",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/contas-acesso",
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{reservaPessoaId}},\n  \"login\": \"a12.bytes.{{runId}}\",\n  \"senha\": \"ééééééééééééééééééééééééééééééééééééé\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Limite BCrypt UTF-8',()=>pm.expect(pm.response.json().message).to.include('72 bytes'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 — Alteração da própria senha",
+      "description": "O PUT atualiza authPassword SOMENTE após 204. Requisições seguintes usam a nova senha; a anterior deve falhar.",
+      "item": [
+        {
+          "name": "Alterar própria senha e atualizar credencial",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/contas-acesso/me/senha",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senhaAtual\": \"{{authPassword}}\",\n  \"novaSenha\": \"{{nextAuthPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Resposta sem corpo',()=>pm.expect(pm.response.text()).to.eql(''));",
+                  "if(pm.response.code===204){pm.collectionVariables.set('oldAuthPassword',pm.collectionVariables.get('authPassword'));pm.collectionVariables.set('authPassword',pm.collectionVariables.get('nextAuthPassword'));}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Senha anterior não autentica",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{authLogin}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{oldAuthPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nova senha autentica",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('DTO sem credenciais; conta OPERADOR ATIVA',()=>{",
+                  " const b=pm.response.json();pm.expect(Object.keys(b).sort()).to.eql(['id','pessoaId','nomePessoa','login','status','perfis'].sort());",
+                  " pm.expect(b.status).to.eql('ATIVA');pm.expect(b.perfis).to.eql(['OPERADOR']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Instrumentos com nova senha",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/instrumentos",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 — Pessoa inativa",
+      "description": "A conta principal ativa prepara e reverte o status de uma Pessoa de teste distinta.",
+      "item": [
+        {
+          "name": "Inativar Pessoa de teste",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas/{{inactivePessoaId}}/status",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INATIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Pessoa INATIVO',()=>pm.expect(pm.response.json().status).to.eql('INATIVO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pessoa inativa não autentica",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{inactiveLogin}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{inactivePassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reativar Pessoa de teste",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/pessoas/{{inactivePessoaId}}/status",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ATIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('Pessoa ATIVO',()=>pm.expect(pm.response.json().status).to.eql('ATIVO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pessoa reativada volta a autenticar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{inactiveLogin}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{inactivePassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  "pm.test('DTO sem credenciais; conta OPERADOR ATIVA',()=>{",
+                  " const b=pm.response.json();pm.expect(Object.keys(b).sort()).to.eql(['id','pessoaId','nomePessoa','login','status','perfis'].sort());",
+                  " pm.expect(b.status).to.eql('ATIVA');pm.expect(b.perfis).to.eql(['OPERADOR']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 — Conta bloqueada",
+      "description": "Requer a preparação SQL após a pasta 02. Não existe endpoint de bloqueio. Não reutilize conta inexistente para obter um 401 falso positivo.",
+      "item": [
+        {
+          "name": "Conta bloqueada não autentica",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/contas-acesso/me",
+            "description": "",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{blockedLogin}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{blockedPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('blockedFixtureReady')!=='true')throw new Error('Execute PREPARAR-CONTA-BLOQUEADA.sql no banco local e defina blockedFixtureReady=true. Consulte POSTMAN.md.');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Sem valores de senha ou hash na resposta', () => {",
+                  " const texto = pm.response.text();",
+                  " ['authPassword','nextAuthPassword','oldAuthPassword','blockedPassword','inactivePassword'].forEach(k => {",
+                  "  const valor = pm.collectionVariables.get(k); if (valor) pm.expect(texto).not.to.include(valor);",
+                  " });",
+                  " pm.expect(texto).not.to.match(/senhaHash|senha_hash|\\{bcrypt\\}|\\$2[aby]\\$/);",
+                  "});",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
