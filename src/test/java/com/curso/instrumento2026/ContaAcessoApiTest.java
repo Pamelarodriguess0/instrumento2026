@@ -30,7 +30,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static com.curso.instrumento2026.support.JwtTestSupport.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -108,7 +108,7 @@ class ContaAcessoApiTest {
         String hash = jdbc.queryForObject("SELECT senha_hash FROM conta_acesso WHERE pessoa_id=?", String.class, outraPessoaId);
         assertTrue(hash.startsWith("{bcrypt}"));
         assertTrue(encoder.matches(SENHA, hash));
-        mvc.perform(get(BASE + "/me").with(httpBasic(outroLogin, SENHA)))
+        mvc.perform(get(BASE + "/me").with(bearer(mvc, outroLogin, SENHA)))
                 .andExpect(status().isOk()).andExpect(jsonPath("pessoaId").value(outraPessoaId));
     }
 
@@ -174,7 +174,7 @@ class ContaAcessoApiTest {
     @Test
     void consultaDeveUsarPrincipalIgnorandoIdsELoginsInformadosPeloCliente() throws Exception {
         var outra = contas.cadastrar(outraPessoaId, outroLogin, SENHA);
-        var resultado = mvc.perform(get(BASE + "/me").with(httpBasic(login, SENHA))
+        var resultado = mvc.perform(get(BASE + "/me").with(bearer(mvc, login, SENHA))
                         .param("id", outra.getId().toString()).param("pessoaId", outraPessoaId.toString()).param("login", outroLogin))
                 .andExpect(status().isOk()).andExpect(jsonPath("id").value(contaId))
                 .andExpect(jsonPath("pessoaId").value(pessoaId)).andExpect(jsonPath("login").value(login))
@@ -185,28 +185,32 @@ class ContaAcessoApiTest {
     @Test
     void consultaETrocaAnonimasDevemRetornar401SemJsonComercial() throws Exception {
         mvc.perform(get(BASE + "/me")).andExpect(status().isUnauthorized())
-                .andExpect(header().string("WWW-Authenticate", containsString("Basic"))).andExpect(content().string(""));
+                .andExpect(header().string("WWW-Authenticate", containsString("Bearer"))).andExpect(content().string(""));
         mvc.perform(put(BASE + "/me/senha").contentType(MediaType.APPLICATION_JSON).content(troca(SENHA, NOVA)))
                 .andExpect(status().isUnauthorized()).andExpect(content().string(""));
     }
 
     @Test
-    void trocaValidaDeveRetornar204ERevogarSenhaAnteriorAposCommit() throws Exception {
-        var resultado = mvc.perform(put(BASE + "/me/senha").with(httpBasic(login, SENHA))
+    void trocaValidaDeveRetornar204EImpedirNovoLoginComSenhaAnteriorAposCommit() throws Exception {
+        String emitido = token(mvc, login, SENHA);
+        var resultado = mvc.perform(put(BASE + "/me/senha").with(bearer(emitido))
                         .contentType(MediaType.APPLICATION_JSON).content(troca(SENHA, NOVA)))
                 .andExpect(status().isNoContent()).andExpect(content().string("")).andReturn();
         semSegredos(resultado);
         String hash = jdbc.queryForObject("SELECT senha_hash FROM conta_acesso WHERE id=?", String.class, contaId);
         assertTrue(encoder.matches(NOVA, hash));
         assertFalse(encoder.matches(SENHA, hash));
-        mvc.perform(get(BASE + "/me").with(httpBasic(login, SENHA))).andExpect(status().isUnauthorized());
-        mvc.perform(get(BASE + "/me").with(httpBasic(login, NOVA))).andExpect(status().isOk());
+        mvc.perform(loginRequest(login, SENHA)).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("message").value("Login ou senha inválidos"));
+        // A troca não revoga JWT já emitido: a validação do token permanece stateless.
+        mvc.perform(get(BASE + "/me").with(bearer(emitido))).andExpect(status().isOk());
+        mvc.perform(get(BASE + "/me").with(bearer(mvc, login, NOVA))).andExpect(status().isOk());
     }
 
     @Test
     void senhaAtualIncorretaDeveRetornar400SemAlterarHash() throws Exception {
         String hashAntes = contas.buscarPorId(contaId).getSenhaHash();
-        var resultado = mvc.perform(put(BASE + "/me/senha").with(httpBasic(login, SENHA))
+        var resultado = mvc.perform(put(BASE + "/me/senha").with(bearer(mvc, login, SENHA))
                         .contentType(MediaType.APPLICATION_JSON).content(troca("Senha atual errada", NOVA)))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("message").value("Senha atual inválida")).andReturn();
         semSegredos(resultado);
@@ -216,7 +220,7 @@ class ContaAcessoApiTest {
     @Test
     void novaSenhaInvalidaOuRepetidaDeveRetornar400() throws Exception {
         for (String nova : new String[]{"curta", "é".repeat(37), SENHA}) {
-            var resultado = mvc.perform(put(BASE + "/me/senha").with(httpBasic(login, SENHA))
+            var resultado = mvc.perform(put(BASE + "/me/senha").with(bearer(mvc, login, SENHA))
                             .contentType(MediaType.APPLICATION_JSON).content(troca(SENHA, nova)))
                     .andExpect(status().isBadRequest()).andReturn();
             semSegredos(resultado);
@@ -231,7 +235,7 @@ class ContaAcessoApiTest {
         String corpo = json.writeValueAsString(Map.of("id", outra.getId(), "contaId", outra.getId(),
                 "pessoaId", outraPessoaId, "login", outroLogin, "senhaAtual", SENHA, "novaSenha", NOVA));
         mvc.perform(put(BASE + "/me/senha").param("id", outra.getId().toString()).param("login", outroLogin)
-                        .with(httpBasic(login, SENHA)).contentType(MediaType.APPLICATION_JSON).content(corpo))
+                        .with(bearer(mvc, login, SENHA)).contentType(MediaType.APPLICATION_JSON).content(corpo))
                 .andExpect(status().isNoContent());
         assertEquals(hashOutra, contas.buscarPorId(outra.getId()).getSenhaHash());
         assertTrue(encoder.matches(NOVA, contas.buscarPorId(contaId).getSenhaHash()));
@@ -242,7 +246,7 @@ class ContaAcessoApiTest {
         var outra = contas.cadastrar(outraPessoaId, outroLogin, "Senha exclusiva outra 2026");
         String corpo = json.writeValueAsString(Map.of("login", outroLogin,
                 "senhaAtual", "Senha exclusiva outra 2026", "novaSenha", NOVA));
-        mvc.perform(put(BASE + "/me/senha").with(httpBasic(login, SENHA)).contentType(MediaType.APPLICATION_JSON).content(corpo))
+        mvc.perform(put(BASE + "/me/senha").with(bearer(mvc, login, SENHA)).contentType(MediaType.APPLICATION_JSON).content(corpo))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("message").value("Senha atual inválida"));
         assertTrue(encoder.matches(SENHA, contas.buscarPorId(contaId).getSenhaHash()));
         assertEquals(outra.getSenhaHash(), contas.buscarPorId(outra.getId()).getSenhaHash());
@@ -250,31 +254,34 @@ class ContaAcessoApiTest {
 
     @Test
     void rotasPorIdEAdministrativasNaoDevemExistir() throws Exception {
-        mvc.perform(get(BASE + "/{id}", contaId).with(httpBasic(login, SENHA))).andExpect(status().isNotFound());
-        mvc.perform(put(BASE + "/{id}/senha", contaId).with(httpBasic(login, SENHA))
+        mvc.perform(get(BASE + "/{id}", contaId).with(bearer(mvc, login, SENHA))).andExpect(status().isNotFound());
+        mvc.perform(put(BASE + "/{id}/senha", contaId).with(bearer(mvc, login, SENHA))
                         .contentType(MediaType.APPLICATION_JSON).content(troca(SENHA, NOVA))).andExpect(status().isNotFound());
-        mvc.perform(put(BASE + "/{id}/status", contaId).with(httpBasic(login, SENHA))
+        mvc.perform(put(BASE + "/{id}/status", contaId).with(bearer(mvc, login, SENHA))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"BLOQUEADA\"}"))
                 .andExpect(status().isNotFound());
     }
 
     private void acessoProprioNegado() throws Exception {
-        mvc.perform(get(BASE + "/me").with(httpBasic(login, SENHA)))
+        mvc.perform(get(BASE + "/me"))
                 .andExpect(status().isUnauthorized()).andExpect(content().string(""));
-        mvc.perform(put(BASE + "/me/senha").with(httpBasic(login, SENHA))
+        mvc.perform(put(BASE + "/me/senha")
                         .contentType(MediaType.APPLICATION_JSON).content(troca(SENHA, NOVA)))
                 .andExpect(status().isUnauthorized()).andExpect(content().string(""));
+        mvc.perform(loginRequest(login, SENHA)).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("message").value("Login ou senha inválidos"))
+                .andExpect(jsonPath("accessToken").doesNotExist());
     }
 
     @Test
-    void contaBloqueadaNaoDeveConsultarOuTrocarSenha() throws Exception {
+    void contaBloqueadaNaoDeveObterTokenParaConsultarOuTrocarSenha() throws Exception {
         contas.alterarStatus(contaId, StatusContaAcesso.BLOQUEADA);
         acessoProprioNegado();
         assertTrue(encoder.matches(SENHA, contas.buscarPorId(contaId).getSenhaHash()));
     }
 
     @Test
-    void pessoaInativaNaoDeveConsultarOuTrocarSenha() throws Exception {
+    void pessoaInativaNaoDeveObterTokenParaConsultarOuTrocarSenha() throws Exception {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> pessoas.findById(pessoaId).orElseThrow().inativar());
         acessoProprioNegado();
     }
@@ -288,7 +295,7 @@ class ContaAcessoApiTest {
 
     @Test
     void jsonMalformadoNaoDeveExporSenhasNoErro() throws Exception {
-        var resultado = mvc.perform(put(BASE + "/me/senha").with(httpBasic(login, SENHA))
+        var resultado = mvc.perform(put(BASE + "/me/senha").with(bearer(mvc, login, SENHA))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"senhaAtual\":\"" + SENHA + "\",\"novaSenha\":"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("message").value("JSON inválido ou malformado")).andReturn();
         semSegredos(resultado);
@@ -302,7 +309,7 @@ class ContaAcessoApiTest {
         var anterior = io.swagger.v3.core.util.Yaml.mapper().readTree(
                 Files.readString(Path.of("docs/aula10/openapi.yaml")));
         // Exceções públicas adicionadas pela documentação de segurança da Aula 12.
-        assertEquals(io.swagger.v3.core.util.Yaml.mapper().readTree("[{\"basicAuth\":[]}]"), publicado.get("security"));
+        assertEquals(io.swagger.v3.core.util.Yaml.mapper().readTree("[{\"bearerAuth\":[]}]"), publicado.get("security"));
         for (var publica : Map.of("/api/health", "get", "/api/pessoas", "post").entrySet()) {
             var operacao = (com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("paths")
                     .get(publica.getKey()).get(publica.getValue());
@@ -319,6 +326,8 @@ class ContaAcessoApiTest {
         anterior.get("components").get("schemas").fields().forEachRemaining(entrada ->
                 assertEquals(entrada.getValue(), publicado.get("components").get("schemas").get(entrada.getKey()), entrada.getKey()));
         assertEquals(anterior.get("info"), publicado.get("info"));
-        assertEquals(3, publicado.get("paths").size() - anterior.get("paths").size());
+        assertEquals(4, publicado.get("paths").size() - anterior.get("paths").size());
+        assertEquals(1, publicado.get("paths").get("/api/autenticacao/login").size());
+        assertTrue(publicado.get("paths").get("/api/autenticacao/login").has("post"));
     }
 }

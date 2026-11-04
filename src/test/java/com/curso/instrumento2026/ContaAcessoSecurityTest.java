@@ -25,7 +25,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static com.curso.instrumento2026.support.JwtTestSupport.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -75,7 +75,7 @@ class ContaAcessoSecurityTest {
             "/api/fornecedores", "/api/instrumentos", "/api/vendas"})
     void consultasComerciaisAnonimasDevemSerNegadas(String rota) throws Exception {
         mvc.perform(get(rota)).andExpect(status().isUnauthorized())
-                .andExpect(header().string("WWW-Authenticate", containsString("Basic")));
+                .andExpect(header().string("WWW-Authenticate", containsString("Bearer")));
     }
 
     @Test
@@ -112,53 +112,57 @@ class ContaAcessoSecurityTest {
     @Test
     void contaPersistidaDeveAutenticarComLoginNormalizadoESenhaIntegral() throws Exception {
         mvc.perform(get("/api/pessoas/{id}", pessoaId)
-                        .with(httpBasic("  " + login.toUpperCase(Locale.ROOT) + "  ", SENHA)))
+                        .with(bearer(mvc, "  " + login.toUpperCase(Locale.ROOT) + "  ", SENHA)))
                 .andExpect(status().isOk()).andExpect(jsonPath("id").value(pessoaId));
         // O usuário OPERADOR também pode escrever: não há restrição administrativa nesta aula.
-        mvc.perform(put("/api/pessoas/{id}/status", pessoaId).with(httpBasic(login, SENHA))
+        mvc.perform(put("/api/pessoas/{id}/status", pessoaId).with(bearer(mvc, login, SENHA))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ATIVO\"}"))
                 .andExpect(status().isOk());
     }
 
     @Test
     void senhaIncorretaOuNormalizadaDeveSerRejeitada() throws Exception {
-        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(httpBasic(login, "Senha incorreta 2026")))
+        mvc.perform(loginRequest(login, "Senha incorreta 2026"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(header().string("WWW-Authenticate", containsString("Basic")))
-                .andExpect(content().string(""));
-        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(httpBasic(login, SENHA.trim())))
-                .andExpect(status().isUnauthorized());
+                .andExpect(jsonPath("message").value("Login ou senha inválidos"))
+                .andExpect(jsonPath("accessToken").doesNotExist());
+        mvc.perform(loginRequest(login, SENHA.trim())).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("message").value("Login ou senha inválidos"));
     }
 
     @Test
-    void bloqueioDeveSerObservadoNaProximaRequisicao() throws Exception {
-        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(httpBasic(login, SENHA)))
+    void bloqueioDeveImpedirNovoLoginSemRevogarTokenEmitido() throws Exception {
+        String emitido = token(mvc, login, SENHA);
+        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(bearer(emitido)))
                 .andExpect(status().isOk());
         contas.alterarStatus(contaId, StatusContaAcesso.BLOQUEADA);
-        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(httpBasic(login, SENHA)))
-                .andExpect(status().isUnauthorized()).andExpect(content().string(""));
+        mvc.perform(loginRequest(login, SENHA)).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("message").value("Login ou senha inválidos"));
+        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(bearer(emitido))).andExpect(status().isOk());
         contas.alterarStatus(contaId, StatusContaAcesso.ATIVA);
-        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(httpBasic(login, SENHA)))
+        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(bearer(mvc, login, SENHA)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void pessoaInativaDeveImpedirAutenticacaoMesmoComContaAtiva() throws Exception {
+    void pessoaInativaDeveImpedirLoginMesmoComContaAtiva() throws Exception {
+        String emitido = token(mvc, login, SENHA);
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
                 pessoas.findById(pessoaId).orElseThrow().inativar());
-        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(httpBasic(login, SENHA)))
-                .andExpect(status().isUnauthorized()).andExpect(content().string(""));
+        mvc.perform(loginRequest(login, SENHA)).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("message").value("Login ou senha inválidos"));
+        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(bearer(emitido))).andExpect(status().isOk());
     }
 
     @Test
     void contaInexistenteDeveSerRejeitada() throws Exception {
-        mvc.perform(get("/api/pessoas/{id}", pessoaId).with(httpBasic("inexistente." + login, SENHA)))
-                .andExpect(status().isUnauthorized()).andExpect(content().string(""));
+        mvc.perform(loginRequest("inexistente." + login, SENHA))
+                .andExpect(status().isUnauthorized()).andExpect(jsonPath("message").value("Login ou senha inválidos"));
     }
 
     @Test
     void autenticacaoNaoDeveCriarSessaoNemPersistirEntreRequisicoes() throws Exception {
-        var autenticada = mvc.perform(get("/api/pessoas/{id}", pessoaId).with(httpBasic(login, SENHA)))
+        var autenticada = mvc.perform(get("/api/pessoas/{id}", pessoaId).with(bearer(mvc, login, SENHA)))
                 .andExpect(status().isOk()).andExpect(cookie().doesNotExist("JSESSIONID")).andReturn();
         assertNull(autenticada.getRequest().getSession(false));
         var anonima = mvc.perform(get("/api/pessoas/{id}", pessoaId))

@@ -36,9 +36,9 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .components(new Components().addSecuritySchemes("basicAuth", new SecurityScheme()
-                        .type(SecurityScheme.Type.HTTP).scheme("basic")))
-                .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
+                .components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme()
+                        .type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .info(new Info()
                         .title("API de Controle de Instrumentos Musicais")
                         .description("API para gerenciamento de instrumentos musicais, categorias, fornecedores, estoque, pessoas, clientes, colaboradores e vendas.")

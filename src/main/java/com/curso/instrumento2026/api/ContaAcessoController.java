@@ -50,11 +50,11 @@ public class ContaAcessoController {
     }
 
     @Operation(summary = "Consultar a própria conta",
-            description = "Exige HTTP Basic de conta e pessoa ativas. Consulta pelo login autenticado, "
+            description = "Exige Bearer JWT válido. Consulta pelo login do subject autenticado, "
                     + "sem aceitar ID de outra conta e sem devolver senha ou hash.")
     @ApiResponse(responseCode = "200", description = "Conta autenticada sem senha ou hash",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ContaAcessoResponse.class)))
-    @ApiResponse(responseCode = "401", description = "Credenciais ausentes ou inválidas, conta bloqueada ou pessoa inativa. "
+    @ApiResponse(responseCode = "401", description = "Bearer ausente, inválido ou expirado. "
             + "Resposta dos filtros de segurança, sem contrato JSON ApiError.", content = @Content)
     @ApiResponse(responseCode = "404", description = "Conta não encontrada",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
@@ -64,13 +64,13 @@ public class ContaAcessoController {
     }
 
     @Operation(summary = "Alterar a própria senha",
-            description = "Exige HTTP Basic de conta e pessoa ativas e confirmação da senha atual. "
+            description = "Exige Bearer JWT válido e confirmação da senha atual. "
                     + "Altera somente a conta autenticada. A nova senha exige ao menos 12 caracteres e no máximo "
-                    + "72 bytes UTF-8, sem normalização. Sucesso sem corpo; a senha anterior deixa de autenticar.")
+                    + "72 bytes UTF-8, sem normalização. Sucesso sem corpo; a senha anterior deixa de permitir novos logins. Tokens já emitidos não são revogados.")
     @ApiResponse(responseCode = "204", description = "Senha alterada", content = @Content)
     @ApiResponse(responseCode = "400", description = "Senha atual ou nova senha inválidas",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
-    @ApiResponse(responseCode = "401", description = "Credenciais ausentes ou inválidas, conta bloqueada ou pessoa inativa. "
+    @ApiResponse(responseCode = "401", description = "Bearer ausente, inválido ou expirado. "
             + "Resposta dos filtros de segurança, sem contrato JSON ApiError.", content = @Content)
     @ApiResponse(responseCode = "404", description = "Conta não encontrada",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))

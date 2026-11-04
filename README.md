@@ -1,5 +1,11 @@
 Tema do projeto
 
+Documentação atual: [Aula 13 — JWT e Bearer Token](docs/aula13/README.md).
+O login em `POST /api/autenticacao/login` emite JWT HS256 para as operações protegidas,
+substituindo HTTP Basic. Consulte a documentação para configurar `JWT_SECRET` localmente,
+executar a aplicação, testar Bearer e rodar Newman, sem publicar segredos ou tokens.
+As descrições do tema original abaixo foram preservadas.
+
 Identificação
 
 - Nome do projeto: instrumento2026
