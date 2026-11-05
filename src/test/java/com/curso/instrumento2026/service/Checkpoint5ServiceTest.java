@@ -1,5 +1,7 @@
 package com.curso.instrumento2026.service;
 
+import org.springframework.security.test.context.support.WithMockUser;
+
 import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.exception.*;
 import com.curso.instrumento2026.repository.CategoriaInstrumentoRepository;
@@ -16,6 +18,7 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@WithMockUser(roles = "ADMINISTRADOR")
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

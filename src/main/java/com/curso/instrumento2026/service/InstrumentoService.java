@@ -14,6 +14,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import org.hibernate.Session;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.postgresql.util.PSQLException;
 import org.springframework.transaction.annotation.Transactional;
@@ -153,6 +154,7 @@ public class InstrumentoService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public void excluir(Long id) {
         Instrumento instrumento = buscarPorId(id);
         try {

@@ -4,6 +4,7 @@ import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.repository.*;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.*;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -204,6 +205,7 @@ class Aula10Passo8ApiTest {
     }
 
     @Test
+    @WithMockUser(username = "administrador.teste", roles = "ADMINISTRADOR")
     void deveAdicionarConsultarERemoverItemSemBaixarEstoque() throws Exception {
         Long id = abrir();
         adicionar(id, instrumentoId, "2");
@@ -322,6 +324,7 @@ class Aula10Passo8ApiTest {
     }
 
     @Test
+    @WithMockUser(username = "administrador.teste", roles = "ADMINISTRADOR")
     void deveImpedirExcluirInstrumentoVendidoEPreservarHistorico() throws Exception {
         Long vendaId = abrir();
         adicionar(vendaId, instrumentoId, "2");

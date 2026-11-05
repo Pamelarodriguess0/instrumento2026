@@ -8,6 +8,7 @@ import com.curso.instrumento2026.exception.RecursoDuplicadoException;
 import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
 import com.curso.instrumento2026.repository.CategoriaInstrumentoRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -73,6 +74,7 @@ public class CategoriaInstrumentoService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public void excluir(Long id) {
         CategoriaInstrumento categoria = buscarPorId(id);
         if (instrumentoRepository.existsByCategoriaId(id)) {

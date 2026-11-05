@@ -15,6 +15,12 @@ public interface ContaAcessoRepository extends JpaRepository<ContaAcesso, Long> 
 
     boolean existsByPessoaId(Long pessoaId);
 
+    @Query("select count(distinct conta) from ContaAcesso conta join conta.perfis perfil "
+            + "where perfil = com.curso.instrumento2026.domain.PerfilAcesso.ADMINISTRADOR "
+            + "and conta.status = com.curso.instrumento2026.domain.StatusContaAcesso.ATIVA "
+            + "and conta.pessoa.status = com.curso.instrumento2026.domain.Status.ATIVO")
+    long contarAdministradoresAtivos();
+
     @EntityGraph(attributePaths = {"pessoa", "perfis"})
     Optional<ContaAcesso> findOneById(Long id);
 

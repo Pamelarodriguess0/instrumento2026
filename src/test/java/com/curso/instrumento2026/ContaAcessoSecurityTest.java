@@ -1,6 +1,10 @@
 package com.curso.instrumento2026;
 
+import static com.curso.instrumento2026.support.AdminFixtureSupport.comoAdministrador;
+
 import com.curso.instrumento2026.domain.Pessoa;
+import com.curso.instrumento2026.config.JwtProperties;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 import com.curso.instrumento2026.domain.StatusContaAcesso;
 import com.curso.instrumento2026.repository.PessoaRepository;
 import com.curso.instrumento2026.service.ContaAcessoService;
@@ -36,6 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ContaAcessoSecurityTest {
     private static final String SENHA = "  Frase Secreta Security 2026  ";
     @Autowired MockMvc mvc;
+    @Autowired JwtEncoder jwtEncoder;
+    @Autowired JwtProperties jwtProperties;
     @Autowired PessoaRepository pessoas;
     @Autowired ContaAcessoService contas;
     @Autowired JdbcTemplate jdbc;
@@ -52,7 +58,7 @@ class ContaAcessoSecurityTest {
         emailBootstrap = execucao + ".bootstrap@example.com";
         pessoaId = new TransactionTemplate(transactionManager).execute(status -> pessoas.save(
                 new Pessoa("Pessoa security", execucao + "@example.com", "52998224725", LocalDate.now())).getId());
-        contaId = contas.cadastrar(pessoaId, login, SENHA).getId();
+        contaId = comoAdministrador(() -> contas.cadastrar(pessoaId, login, SENHA)).getId();
     }
 
     @AfterEach
@@ -79,11 +85,14 @@ class ContaAcessoSecurityTest {
     }
 
     @Test
-    void bootstrapPessoaDeveSerPublicoSemCsrfComDemaisEscritasProtegidas() throws Exception {
+    void cadastroPessoaDeveExigirPerfilComercialEDemaisEscritasAnonimasDevemSerNegadas() throws Exception {
         String corpo = """
                 {"nome":"Pessoa bootstrap security","email":"%s","cpf":"11144477735"}
                 """.formatted(emailBootstrap);
         mvc.perform(post("/api/pessoas").contentType(MediaType.APPLICATION_JSON).content(corpo))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/pessoas").with(bearer(mvc, login, SENHA))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
                 .andExpect(status().isCreated()).andExpect(jsonPath("email").value(emailBootstrap));
         mvc.perform(put("/api/pessoas/{id}", pessoaId).contentType(MediaType.APPLICATION_JSON).content(corpo))
                 .andExpect(status().isUnauthorized());
@@ -92,8 +101,15 @@ class ContaAcessoSecurityTest {
     }
 
     @Test
-    void cadastroPublicoDeveValidarCamposSemLiberarOutrosMetodos() throws Exception {
+    void cadastroDeContaDeveExigirAdministradorEValidarCamposSemLiberarOutrosMetodos() throws Exception {
         mvc.perform(post("/api/contas-acesso").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/contas-acesso").with(bearer(mvc, login, SENHA))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/contas-acesso")
+                        .with(bearerComPerfis(jwtEncoder, jwtProperties, "administrador.fixture", "ADMINISTRADOR"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("status").value(400))
                 .andExpect(jsonPath("fields.pessoaId").exists())
                 .andExpect(jsonPath("fields.login").exists())
@@ -114,7 +130,7 @@ class ContaAcessoSecurityTest {
         mvc.perform(get("/api/pessoas/{id}", pessoaId)
                         .with(bearer(mvc, "  " + login.toUpperCase(Locale.ROOT) + "  ", SENHA)))
                 .andExpect(status().isOk()).andExpect(jsonPath("id").value(pessoaId));
-        // O usuário OPERADOR também pode escrever: não há restrição administrativa nesta aula.
+        // OPERADOR pode alterar dados comerciais de Pessoa, sem receber administração de contas.
         mvc.perform(put("/api/pessoas/{id}/status", pessoaId).with(bearer(mvc, login, SENHA))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ATIVO\"}"))
                 .andExpect(status().isOk());
@@ -135,11 +151,11 @@ class ContaAcessoSecurityTest {
         String emitido = token(mvc, login, SENHA);
         mvc.perform(get("/api/pessoas/{id}", pessoaId).with(bearer(emitido)))
                 .andExpect(status().isOk());
-        contas.alterarStatus(contaId, StatusContaAcesso.BLOQUEADA);
+        comoAdministrador(() -> contas.alterarStatus(contaId, StatusContaAcesso.BLOQUEADA));
         mvc.perform(loginRequest(login, SENHA)).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("message").value("Login ou senha inválidos"));
         mvc.perform(get("/api/pessoas/{id}", pessoaId).with(bearer(emitido))).andExpect(status().isOk());
-        contas.alterarStatus(contaId, StatusContaAcesso.ATIVA);
+        comoAdministrador(() -> contas.alterarStatus(contaId, StatusContaAcesso.ATIVA));
         mvc.perform(get("/api/pessoas/{id}", pessoaId).with(bearer(mvc, login, SENHA)))
                 .andExpect(status().isOk());
     }

@@ -4,6 +4,7 @@ import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.repository.*;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -102,6 +103,7 @@ class Checkpoint8ApiTest {
     }
 
     @Test
+    @WithMockUser(username = "administrador.teste", roles = "ADMINISTRADOR")
     void deveExcluirSemCorpoERetornar404NaConsultaPosterior() throws Exception {
         var categoria = categoria("excluir");
         var instrumento = instrumento(categoria, "CP8-DEL", "excluir", 0, "0", null);
@@ -187,6 +189,7 @@ class Checkpoint8ApiTest {
     }
 
     @Test
+    @WithMockUser(username = "administrador.teste", roles = "ADMINISTRADOR")
     void deveRetornar404ParaNovasOperacoesComIdAusente() throws Exception {
         var categoria = categoria("id ausente");
         mvc.perform(put("/api/instrumentos/{id}", Long.MAX_VALUE).contentType(MediaType.APPLICATION_JSON)

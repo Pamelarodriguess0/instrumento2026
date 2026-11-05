@@ -4,6 +4,7 @@ import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.repository.*;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -68,6 +69,7 @@ class Checkpoint9ApiTest {
     }
 
     @Test
+    @WithMockUser(username = "administrador.teste", roles = "ADMINISTRADOR")
     void deveRetornar409ParaCategoriaEmUsoPreservandoRegistros() throws Exception {
         var instrumento = preparar();
         Long categoriaId = instrumento.getCategoria().getId();
@@ -139,6 +141,7 @@ class Checkpoint9ApiTest {
     }
 
     @Test
+    @WithMockUser(username = "administrador.teste", roles = "ADMINISTRADOR")
     void deveManterExclusaoConcluidaComo204SemCorpo() throws Exception {
         var instrumento = preparar();
         mvc.perform(delete("/api/instrumentos/{id}", instrumento.getId()))

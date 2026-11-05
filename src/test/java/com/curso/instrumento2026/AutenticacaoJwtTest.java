@@ -1,5 +1,7 @@
 package com.curso.instrumento2026;
 
+import static com.curso.instrumento2026.support.AdminFixtureSupport.comoAdministrador;
+
 import com.curso.instrumento2026.domain.Pessoa;
 import com.curso.instrumento2026.repository.PessoaRepository;
 import com.curso.instrumento2026.service.ContaAcessoService;
@@ -63,7 +65,7 @@ class AutenticacaoJwtTest {
         login = "jwt." + token;
         pessoaId = new TransactionTemplate(transactionManager).execute(status -> pessoas.save(new Pessoa(
                 "Pessoa JWT", token + "@example.com", "52998224725", LocalDate.now())).getId());
-        contas.cadastrar(pessoaId, login, SENHA);
+        comoAdministrador(() -> contas.cadastrar(pessoaId, login, SENHA));
     }
 
     @AfterEach

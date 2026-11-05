@@ -1,5 +1,7 @@
 package com.curso.instrumento2026.service;
 
+import org.springframework.security.test.context.support.WithMockUser;
+
 import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
 import com.curso.instrumento2026.repository.*;
@@ -28,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 // Sem @Transactional no teste: cada chamada de service confirma ou reverte sua própria transação.
+@WithMockUser(roles = "ADMINISTRADOR")
 @SpringBootTest
 @ActiveProfiles("test")
 class VendaServiceTest {

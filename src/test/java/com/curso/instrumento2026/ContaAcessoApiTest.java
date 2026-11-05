@@ -1,6 +1,10 @@
 package com.curso.instrumento2026;
 
+import static com.curso.instrumento2026.support.AdminFixtureSupport.comoAdministrador;
+
 import com.curso.instrumento2026.domain.Pessoa;
+import com.curso.instrumento2026.config.JwtProperties;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 import com.curso.instrumento2026.domain.StatusContaAcesso;
 import com.curso.instrumento2026.repository.PessoaRepository;
 import com.curso.instrumento2026.service.ContaAcessoService;
@@ -44,6 +48,8 @@ class ContaAcessoApiTest {
     private static final String NOVA = "Outra frase secreta API 2026";
     private final JsonMapper json = JsonMapper.builder().build();
     @Autowired MockMvc mvc;
+    @Autowired JwtEncoder jwtEncoder;
+    @Autowired JwtProperties jwtProperties;
     @Autowired PessoaRepository pessoas;
     @Autowired ContaAcessoService contas;
     @Autowired PasswordEncoder encoder;
@@ -66,7 +72,7 @@ class ContaAcessoApiTest {
             outraPessoaId = pessoas.save(new Pessoa("Outra pessoa API", execucao + ".outra@example.com",
                     "11144477735", LocalDate.now())).getId();
         });
-        contaId = contas.cadastrar(pessoaId, login, SENHA).getId();
+        contaId = comoAdministrador(() -> contas.cadastrar(pessoaId, login, SENHA)).getId();
     }
 
     @AfterEach
@@ -79,6 +85,10 @@ class ContaAcessoApiTest {
 
     private String cadastro(Long pessoa, String usuario, String senha) {
         return json.writeValueAsString(Map.of("pessoaId", pessoa, "login", usuario, "senha", senha));
+    }
+
+    private org.springframework.test.web.servlet.request.RequestPostProcessor administrador() {
+        return bearerComPerfis(jwtEncoder, jwtProperties, "administrador.fixture", "ADMINISTRADOR");
     }
 
     private String troca(String atual, String nova) {
@@ -96,8 +106,28 @@ class ContaAcessoApiTest {
     }
 
     @Test
-    void cadastroPublicoDeveRetornar201ComOperadorAtivoESomenteCamposDeResposta() throws Exception {
-        var resultado = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+    void cadastroAnonimoDeveRetornar401SemCriarConta() throws Exception {
+        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+                        .content(cadastro(outraPessoaId, outroLogin, SENHA)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", containsString("Bearer")))
+                .andExpect(content().string(""));
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM conta_acesso WHERE pessoa_id=?", Integer.class, outraPessoaId));
+    }
+
+    @Test
+    void operadorNaoDeveCadastrarContaNemAlterarSeuPerfil() throws Exception {
+        mvc.perform(post(BASE).with(bearer(mvc, login, SENHA)).contentType(MediaType.APPLICATION_JSON)
+                        .content(cadastro(outraPessoaId, outroLogin, SENHA)))
+                .andExpect(status().isForbidden()).andExpect(content().string(""));
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM conta_acesso WHERE pessoa_id=?", Integer.class, outraPessoaId));
+        assertEquals(java.util.Set.of(com.curso.instrumento2026.domain.PerfilAcesso.OPERADOR),
+                contas.buscarPorId(contaId).getPerfis());
+    }
+
+    @Test
+    void cadastroAdministrativoDeveRetornar201ComOperadorAtivoESomenteCamposDeResposta() throws Exception {
+        var resultado = mvc.perform(post(BASE).with(administrador()).contentType(MediaType.APPLICATION_JSON)
                         .content(cadastro(outraPessoaId, "  " + outroLogin.toUpperCase(java.util.Locale.ROOT) + "  ", SENHA)))
                 .andExpect(status().isCreated()).andExpect(jsonPath("pessoaId").value(outraPessoaId))
                 .andExpect(jsonPath("login").value(outroLogin)).andExpect(jsonPath("nomePessoa").value("Outra pessoa API"))
@@ -114,7 +144,7 @@ class ContaAcessoApiTest {
 
     @Test
     void loginDuplicadoNormalizadoDeveRetornar409() throws Exception {
-        var resultado = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+        var resultado = mvc.perform(post(BASE).with(administrador()).contentType(MediaType.APPLICATION_JSON)
                         .content(cadastro(outraPessoaId, " " + login.toUpperCase(java.util.Locale.ROOT) + " ", SENHA)))
                 .andExpect(status().isConflict()).andExpect(jsonPath("status").value(409))
                 .andExpect(jsonPath("message").value("Login já cadastrado")).andReturn();
@@ -123,7 +153,7 @@ class ContaAcessoApiTest {
 
     @Test
     void segundaContaDaPessoaDeveRetornar409() throws Exception {
-        var resultado = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+        var resultado = mvc.perform(post(BASE).with(administrador()).contentType(MediaType.APPLICATION_JSON)
                         .content(cadastro(pessoaId, outroLogin, SENHA)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("message").value("Pessoa já possui conta de acesso")).andReturn();
@@ -132,7 +162,7 @@ class ContaAcessoApiTest {
 
     @Test
     void pessoaInexistenteDeveRetornar404() throws Exception {
-        var resultado = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+        var resultado = mvc.perform(post(BASE).with(administrador()).contentType(MediaType.APPLICATION_JSON)
                         .content(cadastro(Long.MAX_VALUE, outroLogin, SENHA)))
                 .andExpect(status().isNotFound()).andExpect(jsonPath("message").value("Pessoa não encontrada")).andReturn();
         semSegredos(resultado);
@@ -142,7 +172,7 @@ class ContaAcessoApiTest {
     @ValueSource(strings = {"", "curta", "                                                                         ",
             "ééééééééééééééééééééééééééééééééééééé"})
     void cadastroComSenhaInvalidaDeveRetornar400SemExporValor(String senha) throws Exception {
-        var resultado = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+        var resultado = mvc.perform(post(BASE).with(administrador()).contentType(MediaType.APPLICATION_JSON)
                         .content(cadastro(outraPessoaId, outroLogin, senha)))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("status").value(400)).andReturn();
         semSegredos(resultado);
@@ -152,17 +182,17 @@ class ContaAcessoApiTest {
 
     @Test
     void cadastroSemCamposObrigatoriosDeveRetornar400() throws Exception {
-        var resultado = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("{}"))
+        var resultado = mvc.perform(post(BASE).with(administrador()).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("fields.pessoaId").exists())
                 .andExpect(jsonPath("fields.login").exists()).andExpect(jsonPath("fields.senha").exists()).andReturn();
         semSegredos(resultado);
     }
 
     @Test
-    void cadastroPublicoNaoDeveAceitarEscaladaDePerfilOuStatus() throws Exception {
+    void cadastroAdministrativoNaoDeveAceitarEscaladaDePerfilOuStatusNoDto() throws Exception {
         String corpo = json.writeValueAsString(Map.of("pessoaId", outraPessoaId, "login", outroLogin, "senha", SENHA,
                 "perfis", new String[]{"ADMINISTRADOR"}, "status", "BLOQUEADA", "senhaHash", "hash-injetado"));
-        var resultado = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(corpo))
+        var resultado = mvc.perform(post(BASE).with(administrador()).contentType(MediaType.APPLICATION_JSON).content(corpo))
                 .andExpect(status().isCreated()).andExpect(jsonPath("status").value("ATIVA"))
                 .andExpect(jsonPath("perfis.length()").value(1)).andExpect(jsonPath("perfis[0]").value("OPERADOR")).andReturn();
         semSegredos(resultado);
@@ -173,7 +203,7 @@ class ContaAcessoApiTest {
 
     @Test
     void consultaDeveUsarPrincipalIgnorandoIdsELoginsInformadosPeloCliente() throws Exception {
-        var outra = contas.cadastrar(outraPessoaId, outroLogin, SENHA);
+        var outra = comoAdministrador(() -> contas.cadastrar(outraPessoaId, outroLogin, SENHA));
         var resultado = mvc.perform(get(BASE + "/me").with(bearer(mvc, login, SENHA))
                         .param("id", outra.getId().toString()).param("pessoaId", outraPessoaId.toString()).param("login", outroLogin))
                 .andExpect(status().isOk()).andExpect(jsonPath("id").value(contaId))
@@ -230,7 +260,7 @@ class ContaAcessoApiTest {
 
     @Test
     void idsNoCorpoOuQueryNaoDevemPermitirTrocarSenhaDeOutraConta() throws Exception {
-        var outra = contas.cadastrar(outraPessoaId, outroLogin, "Senha exclusiva outra 2026");
+        var outra = comoAdministrador(() -> contas.cadastrar(outraPessoaId, outroLogin, "Senha exclusiva outra 2026"));
         String hashOutra = outra.getSenhaHash();
         String corpo = json.writeValueAsString(Map.of("id", outra.getId(), "contaId", outra.getId(),
                 "pessoaId", outraPessoaId, "login", outroLogin, "senhaAtual", SENHA, "novaSenha", NOVA));
@@ -243,7 +273,7 @@ class ContaAcessoApiTest {
 
     @Test
     void senhaAtualDeOutraPessoaNaoDeveAutorizarTrocaMesmoInformandoSeuLogin() throws Exception {
-        var outra = contas.cadastrar(outraPessoaId, outroLogin, "Senha exclusiva outra 2026");
+        var outra = comoAdministrador(() -> contas.cadastrar(outraPessoaId, outroLogin, "Senha exclusiva outra 2026"));
         String corpo = json.writeValueAsString(Map.of("login", outroLogin,
                 "senhaAtual", "Senha exclusiva outra 2026", "novaSenha", NOVA));
         mvc.perform(put(BASE + "/me/senha").with(bearer(mvc, login, SENHA)).contentType(MediaType.APPLICATION_JSON).content(corpo))
@@ -253,13 +283,16 @@ class ContaAcessoApiTest {
     }
 
     @Test
-    void rotasPorIdEAdministrativasNaoDevemExistir() throws Exception {
+    void rotasPorIdESenhaContinuamAusentesEOperacoesAdministrativasExigemAdministrador() throws Exception {
         mvc.perform(get(BASE + "/{id}", contaId).with(bearer(mvc, login, SENHA))).andExpect(status().isNotFound());
         mvc.perform(put(BASE + "/{id}/senha", contaId).with(bearer(mvc, login, SENHA))
                         .contentType(MediaType.APPLICATION_JSON).content(troca(SENHA, NOVA))).andExpect(status().isNotFound());
         mvc.perform(put(BASE + "/{id}/status", contaId).with(bearer(mvc, login, SENHA))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"BLOQUEADA\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
+        mvc.perform(put(BASE + "/{id}/perfis", contaId).with(bearer(mvc, login, SENHA))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"perfis\":[\"OPERADOR\",\"ADMINISTRADOR\"]}"))
+                .andExpect(status().isForbidden());
     }
 
     private void acessoProprioNegado() throws Exception {
@@ -275,7 +308,7 @@ class ContaAcessoApiTest {
 
     @Test
     void contaBloqueadaNaoDeveObterTokenParaConsultarOuTrocarSenha() throws Exception {
-        contas.alterarStatus(contaId, StatusContaAcesso.BLOQUEADA);
+        comoAdministrador(() -> contas.alterarStatus(contaId, StatusContaAcesso.BLOQUEADA));
         acessoProprioNegado();
         assertTrue(encoder.matches(SENHA, contas.buscarPorId(contaId).getSenhaHash()));
     }
@@ -289,7 +322,7 @@ class ContaAcessoApiTest {
     @Test
     void cadastroParaPessoaInativaDeveSerRejeitado() throws Exception {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> pessoas.findById(outraPessoaId).orElseThrow().inativar());
-        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(cadastro(outraPessoaId, outroLogin, SENHA)))
+        mvc.perform(post(BASE).with(administrador()).contentType(MediaType.APPLICATION_JSON).content(cadastro(outraPessoaId, outroLogin, SENHA)))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("message").value("Pessoa deve estar ativa"));
     }
 
@@ -303,31 +336,9 @@ class ContaAcessoApiTest {
 
     @Test
     void novasOperacoesNaoDevemAlterarRotasOuSchemasHistoricos() throws Exception {
-        var resposta = mvc.perform(get("/v3/api-docs.yaml")).andExpect(status().isOk()).andReturn();
-        var publicado = io.swagger.v3.core.util.Yaml.mapper().readTree(
-                resposta.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
-        var anterior = io.swagger.v3.core.util.Yaml.mapper().readTree(
-                Files.readString(Path.of("docs/aula10/openapi.yaml")));
-        // Exceções públicas adicionadas pela documentação de segurança da Aula 12.
-        assertEquals(io.swagger.v3.core.util.Yaml.mapper().readTree("[{\"bearerAuth\":[]}]"), publicado.get("security"));
-        for (var publica : Map.of("/api/health", "get", "/api/pessoas", "post").entrySet()) {
-            var operacao = (com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("paths")
-                    .get(publica.getKey()).get(publica.getValue());
-            assertEquals(io.swagger.v3.core.util.Yaml.mapper().readTree("[]"), operacao.remove("security"));
-        }
-        // As três descrições de concorrência foram alteradas legitimamente na Aula 11.
-        for (String rota : new String[]{"/api/vendas/{id}/finalizacao", "/api/instrumentos/{id}/estoque/entradas",
-                "/api/instrumentos/{id}/estoque/saidas"}) {
-            ((com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("paths").get(rota).get("post"))
-                    .set("description", anterior.get("paths").get(rota).get("post").get("description"));
-        }
-        anterior.get("paths").fields().forEachRemaining(entrada ->
-                assertEquals(entrada.getValue(), publicado.get("paths").get(entrada.getKey()), entrada.getKey()));
-        anterior.get("components").get("schemas").fields().forEachRemaining(entrada ->
-                assertEquals(entrada.getValue(), publicado.get("components").get("schemas").get(entrada.getKey()), entrada.getKey()));
-        assertEquals(anterior.get("info"), publicado.get("info"));
-        assertEquals(4, publicado.get("paths").size() - anterior.get("paths").size());
-        assertEquals(1, publicado.get("paths").get("/api/autenticacao/login").size());
-        assertTrue(publicado.get("paths").get("/api/autenticacao/login").has("post"));
+        String yaml = mvc.perform(get("/v3/api-docs.yaml")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        com.curso.instrumento2026.support.ContratoOpenApiSupport.verificarCompatibilidadeComAula10(
+                io.swagger.v3.core.util.Yaml.mapper().readTree(yaml));
     }
 }

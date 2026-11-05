@@ -1,5 +1,7 @@
 package com.curso.instrumento2026.service;
 
+import org.springframework.security.test.context.support.WithMockUser;
+
 import com.curso.instrumento2026.api.mapper.ContaAcessoMapper;
 import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.exception.RecursoDuplicadoException;
@@ -27,6 +29,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 // Sem @Transactional no teste: verificar os dados confirmados ou revertidos pelo service.
+@WithMockUser(roles = "ADMINISTRADOR")
 @SpringBootTest
 @ActiveProfiles("test")
 class ContaAcessoServiceTest {

@@ -15,25 +15,56 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.ApplicationContext;
+import org.junit.jupiter.api.BeforeEach;
+import com.curso.instrumento2026.api.*;
+import com.curso.instrumento2026.api.mapper.*;
+import com.curso.instrumento2026.service.*;
+import com.curso.instrumento2026.config.*;
+
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
+
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = {
-        "springdoc.api-docs.enabled=true",
-        "springdoc.swagger-ui.enabled=true"
-})
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+@WebMvcTest(controllers = {AutenticacaoController.class, HealthController.class, ContaAcessoController.class,
+        PessoaController.class, ClienteController.class, ColaboradorController.class, CategoriaInstrumentoController.class,
+        FornecedorController.class, InstrumentoController.class, VendaController.class}, properties = {
+        "springdoc.api-docs.enabled=true", "springdoc.swagger-ui.enabled=true",
+        "app.security.jwt.issuer=https://instrumento2026.local", "app.security.jwt.expiration=PT30M",
+        "app.security.jwt.secret=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+        "app.security.initial-admin.enabled=false"})
+@Import({OpenApiConfig.class, SecurityConfig.class, JwtConfig.class, PasswordEncoderConfig.class,
+        OpenApiDocumentationTest.ContextoSemBanco.class})
+@ImportAutoConfiguration({org.springdoc.core.configuration.SpringDocConfiguration.class,
+        org.springdoc.core.properties.SpringDocConfigProperties.class,
+        org.springdoc.core.configuration.SpringDocSecurityConfiguration.class,
+        org.springdoc.core.configuration.SpringDocPageableConfiguration.class,
+        org.springdoc.core.configuration.SpringDocSortConfiguration.class,
+        org.springdoc.core.configuration.SpringDocSpecPropertiesConfiguration.class,
+        org.springdoc.webmvc.core.configuration.SpringDocWebMvcConfiguration.class,
+        org.springdoc.webmvc.core.configuration.MultipleOpenApiSupportConfiguration.class,
+        org.springdoc.webmvc.ui.SwaggerConfig.class,
+        org.springdoc.core.properties.SwaggerUiConfigProperties.class,
+        org.springdoc.core.properties.SwaggerUiOAuthProperties.class})
+@MockitoBean(types = {AutenticacaoService.class, ContaAcessoService.class, PessoaService.class, ClienteService.class,
+        ColaboradorService.class, CategoriaInstrumentoService.class, FornecedorService.class, InstrumentoService.class,
+        VendaService.class, ContaAcessoMapper.class, PessoaMapper.class, ClienteMapper.class, ColaboradorMapper.class,
+        CategoriaInstrumentoMapper.class, FornecedorMapper.class, InstrumentoMapper.class, VendaMapper.class})
 class OpenApiDocumentationTest {
 
     @Autowired
     MockMvc mvc;
+    @Autowired ApplicationContext contexto;
+    @BeforeEach void contextoNaoDeveAcessarBanco() {
+        assertTrue(contexto.getBeansOfType(javax.sql.DataSource.class).isEmpty());
+    }
 
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
@@ -66,10 +97,14 @@ class OpenApiDocumentationTest {
         assertFalse(documento.read(operacao + ".summary", String.class).isBlank());
         assertEquals(List.of(tag), documento.read(operacao + ".tags"));
         Map<String, Object> respostas = documento.read(operacao + ".responses");
-        assertEquals(Set.copyOf(Arrays.asList(codigos.split(","))), respostas.keySet());
+        var esperados = new java.util.HashSet<>(Arrays.asList(codigos.split(",")));
+        esperados.addAll(Set.of("401", "403"));
+        assertEquals(esperados, respostas.keySet());
         for (String codigo : respostas.keySet()) {
             String resposta = operacao + ".responses['" + codigo + "']";
-            if (codigo.startsWith("4")) {
+            if (Set.of("401", "403").contains(codigo)) {
+                assertFalse(((Map<?, ?>) respostas.get(codigo)).containsKey("content"));
+            } else if (codigo.startsWith("4")) {
                 assertEquals("#/components/schemas/ApiError", documento.read(
                         resposta + ".content['application/json'].schema['$ref']"));
             } else {
@@ -150,71 +185,21 @@ class OpenApiDocumentationTest {
     }
 
     @Test
-    void exportacaoDaAula10DevePreservarContratoComAdicoesExplicitasDasAulas12E13() throws Exception {
+    void exportacaoDaAula10DevePreservarContratoComAdicoesExplicitasAteAula14() throws Exception {
         String yaml = mvc.perform(get("/v3/api-docs.yaml")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
-        var publicado = Yaml.mapper().readTree(yaml);
-        var exportado = Yaml.mapper().readTree(Files.readString(Path.of("docs/aula10/openapi.yaml")));
-        assertEquals(Yaml.mapper().readTree("[{\"bearerAuth\":[]}]"), publicado.get("security"));
-        var esquemasSeguranca = ((com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("components"))
-                .remove("securitySchemes");
-        assertEquals(Yaml.mapper().readTree("{\"bearerAuth\":{\"type\":\"http\",\"scheme\":\"bearer\",\"bearerFormat\":\"JWT\"}}"), esquemasSeguranca);
-        // As duas operações históricas públicas retiram explicitamente a exigência global.
-        for (var publica : Map.of("/api/health", "get", "/api/pessoas", "post").entrySet()) {
-            var operacao = (com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("paths")
-                    .get(publica.getKey()).get(publica.getValue());
-            assertEquals(Yaml.mapper().readTree("[]"), operacao.remove("security"), publica.getKey());
-        }
-        // A Aula 11 altera somente estas três descrições do contrato histórico.
-        for (String rota : List.of("/api/vendas/{id}/finalizacao",
-                "/api/instrumentos/{id}/estoque/entradas", "/api/instrumentos/{id}/estoque/saidas")) {
-            var operacao = publicado.get("paths").get(rota).get("post");
-            String descricao = operacao.get("description").asText();
-            assertTrue(descricao.contains("bloqueio pessimista"), rota);
-            assertTrue(descricao.contains("transação"), rota);
-            if (rota.equals("/api/vendas/{id}/finalizacao")) {
-                assertTrue(descricao.contains("ordem crescente de ID"));
-                assertTrue(descricao.contains("evitando que duas vendas consumam o mesmo estoque"));
-            } else {
-                assertTrue(descricao.contains("quantidade inteira positiva"));
-                assertTrue(descricao.contains("Repetir a chamada repete o efeito"));
-                if (rota.endsWith("/saidas")) assertTrue(descricao.contains("sem permitir saldo negativo"));
-            }
-            ((com.fasterxml.jackson.databind.node.ObjectNode) operacao).put("description",
-                    exportado.get("paths").get(rota).get("post").get("description").asText());
-        }
-        // Remover somente adições explicitamente conhecidas da cópia em memória.
-        // A igualdade integral restante protege métodos, operationId, parâmetros, respostas e schemas antigos.
-        var caminhos = (com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("paths");
-        for (var novaOperacao : Map.of("/api/contas-acesso", "post",
-                "/api/contas-acesso/me", "get", "/api/contas-acesso/me/senha", "put",
-                "/api/autenticacao/login", "post").entrySet()) {
-            assertFalse(exportado.get("paths").has(novaOperacao.getKey()));
-            var caminho = caminhos.remove(novaOperacao.getKey());
-            assertNotNull(caminho, novaOperacao.getKey());
-            assertEquals(1, caminho.size(), novaOperacao.getKey());
-            assertTrue(caminho.has(novaOperacao.getValue()), novaOperacao.getKey());
-        }
-        var schemas = (com.fasterxml.jackson.databind.node.ObjectNode) publicado.get("components").get("schemas");
-        for (String novoSchema : List.of("ContaAcessoRequest", "ContaAcessoResponse", "AlterarSenhaContaRequest",
-                "LoginRequest", "TokenResponse")) {
-            assertFalse(exportado.get("components").get("schemas").has(novoSchema));
-            assertNotNull(schemas.remove(novoSchema), novoSchema);
-        }
-        assertEquals(exportado.get("paths"), caminhos);
-        assertEquals(exportado.get("components"), publicado.get("components"));
-        assertEquals(publicado.get("info"), exportado.get("info"));
+        com.curso.instrumento2026.support.ContratoOpenApiSupport.verificarCompatibilidadeComAula10(Yaml.mapper().readTree(yaml));
     }
 
     @Test
-    void devePublicarBearerGlobalComExcecoesSomenteNasQuatroOperacoesPublicas() throws Exception {
+    void devePublicarBearerGlobalComExcecoesSomenteEmHealthELogin() throws Exception {
         var resposta = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
         var documento = Yaml.mapper().readTree(resposta.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
         var bearer = Yaml.mapper().readTree("[{\"bearerAuth\":[]}]");
         assertEquals(bearer, documento.get("security"));
         assertEquals(Yaml.mapper().readTree("{\"bearerAuth\":{\"type\":\"http\",\"scheme\":\"bearer\",\"bearerFormat\":\"JWT\"}}"),
                 documento.get("components").get("securitySchemes"));
-        Set<String> publicas = Set.of("get /api/health", "post /api/pessoas", "post /api/contas-acesso", "post /api/autenticacao/login");
+        Set<String> publicas = Set.of("get /api/health", "post /api/autenticacao/login");
         Set<String> encontradas = new java.util.HashSet<>();
         documento.get("paths").fields().forEachRemaining(rota -> rota.getValue().fields().forEachRemaining(metodo -> {
             String operacao = metodo.getKey() + " " + rota.getKey();
@@ -225,6 +210,17 @@ class OpenApiDocumentationTest {
                 encontradas.add(operacao);
             } else {
                 assertEquals(bearer, seguranca, operacao);
+                boolean administrativa = metodo.getKey().equals("delete")
+                        || operacao.equals("post /api/contas-acesso")
+                        || rota.getKey().matches("/api/contas-acesso/[^/]+/(perfis|status)");
+                String perfil = administrativa ? "ADMINISTRADOR" : "OPERADOR ou ADMINISTRADOR";
+                assertTrue(metodo.getValue().path("description").asText().endsWith("perfil " + perfil + "."), operacao);
+                for (String codigo : List.of("401", "403")) {
+                    var erro = metodo.getValue().path("responses").get(codigo);
+                    assertNotNull(erro, operacao + " " + codigo);
+                    assertFalse(erro.has("content"), operacao);
+                    assertTrue(erro.path("description").asText().contains("filtros"), operacao);
+                }
             }
         }));
         assertEquals(publicas, encontradas);
@@ -235,9 +231,11 @@ class OpenApiDocumentationTest {
 
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
-            "/api/contas-acesso|post|ContaAcessoRequest|201|ContaAcessoResponse|201,400,404,409",
-            "/api/contas-acesso/me|get|nenhum|200|ContaAcessoResponse|200,401,404",
-            "/api/contas-acesso/me/senha|put|AlterarSenhaContaRequest|204|nenhum|204,400,401,404"
+            "/api/contas-acesso|post|ContaAcessoRequest|201|ContaAcessoResponse|201,400,401,403,404,409",
+            "/api/contas-acesso/me|get|nenhum|200|ContaAcessoResponse|200,401,403,404",
+            "/api/contas-acesso/me/senha|put|AlterarSenhaContaRequest|204|nenhum|204,400,401,403,404",
+            "/api/contas-acesso/{id}/perfis|put|PerfisContaAcessoRequest|200|ContaAcessoResponse|200,400,401,403,404",
+            "/api/contas-acesso/{id}/status|put|StatusContaAcessoRequest|200|ContaAcessoResponse|200,400,401,403,404"
     })
     void deveDocumentarOperacoesDeContaComDtosECodigosReais(String rota, String metodo, String entrada,
                                                          String sucesso, String saida, String codigos) throws Exception {
@@ -263,7 +261,7 @@ class OpenApiDocumentationTest {
         }
         for (String codigo : retornos) {
             var retorno = operacao.get("responses").get(codigo);
-            if (codigo.equals("401")) {
+            if (Set.of("401", "403").contains(codigo)) {
                 assertFalse(retorno.has("content"));
                 assertTrue(retorno.get("description").asText().contains("filtros de segurança"));
             } else if (Set.of("400", "404", "409").contains(codigo)) {
@@ -466,5 +464,15 @@ class OpenApiDocumentationTest {
         }
         assertEquals("false", propriedades.getProperty("springdoc.api-docs.enabled"));
         assertEquals("false", propriedades.getProperty("springdoc.swagger-ui.enabled"));
+    }
+    @org.springframework.boot.test.context.TestConfiguration(proxyBeanMethods = false)
+    static class ContextoSemBanco {
+        @org.springframework.context.annotation.Bean
+        org.springframework.security.provisioning.InMemoryUserDetailsManager usuarioFicticio(
+                org.springframework.security.crypto.password.PasswordEncoder encoder) {
+            return new org.springframework.security.provisioning.InMemoryUserDetailsManager(
+                    org.springframework.security.core.userdetails.User.withUsername("documentacao.ficticia")
+                            .password(encoder.encode("senha ficticia documentacao 2026")).roles("OPERADOR").build());
+        }
     }
 }

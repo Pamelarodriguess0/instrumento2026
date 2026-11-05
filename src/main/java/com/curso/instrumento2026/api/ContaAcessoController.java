@@ -4,13 +4,14 @@ import com.curso.instrumento2026.api.dto.AlterarSenhaContaRequest;
 import com.curso.instrumento2026.api.dto.ApiError;
 import com.curso.instrumento2026.api.dto.ContaAcessoRequest;
 import com.curso.instrumento2026.api.dto.ContaAcessoResponse;
+import com.curso.instrumento2026.api.dto.PerfisContaAcessoRequest;
+import com.curso.instrumento2026.api.dto.StatusContaAcessoRequest;
 import com.curso.instrumento2026.api.mapper.ContaAcessoMapper;
 import com.curso.instrumento2026.service.ContaAcessoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -32,9 +33,8 @@ public class ContaAcessoController {
     }
 
     @Operation(summary = "Cadastrar conta de acesso",
-            description = "Bootstrap público didático: cria conta ATIVA com perfil OPERADOR. "
-                    + "Não comprova a identidade de quem informa pessoaId; exige revisão antes de produção.")
-    @SecurityRequirements
+            description = "Cria conta ATIVA com perfil OPERADOR. Operação administrativa; "
+                    + "não permite escolher perfis ou status no cadastro.")
     @ApiResponse(responseCode = "201", description = "Conta cadastrada sem senha ou hash na resposta",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ContaAcessoResponse.class)))
     @ApiResponse(responseCode = "400", description = "Dados ou regra de negócio inválidos",
@@ -79,5 +79,36 @@ public class ContaAcessoController {
                                                   @Valid @RequestBody AlterarSenhaContaRequest request) {
         service.alterarSenha(principal.getName(), request.senhaAtual(), request.novaSenha());
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Alterar perfis da conta",
+            description = "Substitui os perfis da conta por um conjunto não vazio de OPERADOR e/ou ADMINISTRADOR. "
+                    + "Impede retirar o próprio perfil administrativo e remover o último administrador utilizável "
+                    + "(conta ATIVA e Pessoa ATIVA). Não revoga nem altera tokens já emitidos; novos perfis exigem novo login.")
+    @ApiResponse(responseCode = "200", description = "Perfis atualizados, sem senha ou hash",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ContaAcessoResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Perfis inválidos, autorremoção administrativa ou último administrador utilizável",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
+    @ApiResponse(responseCode = "404", description = "Conta não encontrada",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
+    @PutMapping("/{id}/perfis")
+    public ContaAcessoResponse alterarPerfis(@PathVariable Long id,
+                                           @Valid @RequestBody PerfisContaAcessoRequest request) {
+        return mapper.toResponse(service.alterarPerfis(id, request.perfis()));
+    }
+
+    @Operation(operationId = "alterarStatusContaAcesso", summary = "Alterar status da conta",
+            description = "Ativa ou bloqueia outra conta. Impede autobloqueio e bloqueio do último administrador utilizável "
+                    + "(conta ATIVA e Pessoa ATIVA). Bloqueio impede novos logins, sem revogar tokens já emitidos.")
+    @ApiResponse(responseCode = "200", description = "Status atualizado, sem senha ou hash",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ContaAcessoResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Status inválido, autobloqueio ou último administrador utilizável",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
+    @ApiResponse(responseCode = "404", description = "Conta não encontrada",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
+    @PutMapping("/{id}/status")
+    public ContaAcessoResponse alterarStatus(@PathVariable Long id,
+                                           @Valid @RequestBody StatusContaAcessoRequest request) {
+        return mapper.toResponse(service.alterarStatus(id, request.status()));
     }
 }

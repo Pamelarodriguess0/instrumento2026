@@ -2,6 +2,7 @@ package com.curso.instrumento2026.service;
 
 import com.curso.instrumento2026.domain.ContaAcesso;
 import com.curso.instrumento2026.domain.Pessoa;
+import com.curso.instrumento2026.domain.PerfilAcesso;
 import com.curso.instrumento2026.domain.Status;
 import com.curso.instrumento2026.domain.StatusContaAcesso;
 import com.curso.instrumento2026.exception.RecursoDuplicadoException;
@@ -12,10 +13,15 @@ import org.postgresql.util.PSQLException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import static com.curso.instrumento2026.service.ValidacaoCredenciais.normalizarLogin;
+import static com.curso.instrumento2026.service.ValidacaoCredenciais.validarSenha;
 
 @Service
 public class ContaAcessoService {
@@ -31,6 +37,7 @@ public class ContaAcessoService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ContaAcesso cadastrar(Long pessoaId, String login, String senha) {
         if (pessoaId == null) throw new IllegalArgumentException("Pessoa é obrigatória");
         String loginNormalizado = normalizarLogin(login);
@@ -97,32 +104,50 @@ public class ContaAcessoService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ContaAcesso alterarPerfis(Long id, Set<PerfilAcesso> novosPerfis) {
+        if (novosPerfis == null || novosPerfis.isEmpty()) {
+            throw new IllegalArgumentException("A conta deve possuir ao menos um perfil");
+        }
+        var validados = new LinkedHashSet<>(novosPerfis);
+        if (validados.contains(null)) throw new IllegalArgumentException("Perfil é obrigatório");
+        ContaAcesso conta = buscarPorId(id);
+        boolean removeAdministrador = conta.possuiPerfil(PerfilAcesso.ADMINISTRADOR)
+                && !validados.contains(PerfilAcesso.ADMINISTRADOR);
+        if (removeAdministrador) {
+            if (propriaConta(conta)) {
+                throw new IllegalArgumentException("Não é permitido remover o próprio perfil de administrador");
+            }
+            protegerUltimoAdministrador(conta);
+        }
+        conta.substituirPerfis(validados);
+        return conta;
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ContaAcesso alterarStatus(Long id, StatusContaAcesso status) {
         if (status == null) throw new IllegalArgumentException("Status é obrigatório");
         ContaAcesso conta = buscarPorId(id);
+        if (status == StatusContaAcesso.BLOQUEADA) {
+            if (propriaConta(conta)) {
+                throw new IllegalArgumentException("Não é permitido bloquear a própria conta");
+            }
+            protegerUltimoAdministrador(conta);
+        }
         if (status == StatusContaAcesso.ATIVA) conta.ativar(); else conta.bloquear();
         return conta;
     }
 
-    private static String normalizarLogin(String login) {
-        if (login == null || login.isBlank()) throw new IllegalArgumentException("Login é obrigatório");
-        String normalizado = login.trim().toLowerCase(Locale.ROOT);
-        if (normalizado.length() < 3 || normalizado.length() > 80) {
-            throw new IllegalArgumentException("Login deve possuir entre 3 e 80 caracteres");
-        }
-        if (!normalizado.matches("^[a-z0-9._-]+$")) {
-            throw new IllegalArgumentException("Login aceita somente letras, números, ponto, hífen e sublinhado");
-        }
-        return normalizado;
+    private boolean propriaConta(ContaAcesso conta) {
+        return conta.getLogin().equals(SecurityContextHolder.getContext().getAuthentication().getName());
     }
 
-    private static void validarSenha(String senha) {
-        if (senha == null || senha.isBlank()) throw new IllegalArgumentException("Senha é obrigatória");
-        if (senha.codePointCount(0, senha.length()) < 12) {
-            throw new IllegalArgumentException("Senha deve possuir ao menos 12 caracteres");
-        }
-        if (senha.getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new IllegalArgumentException("Senha deve possuir no máximo 72 bytes em UTF-8");
+    private void protegerUltimoAdministrador(ContaAcesso conta) {
+        if (conta.possuiPerfil(PerfilAcesso.ADMINISTRADOR) && conta.podeAutenticar()
+                && repository.contarAdministradoresAtivos() <= 1) {
+            throw new IllegalArgumentException("O sistema deve manter ao menos um administrador ativo");
         }
     }
+
 }

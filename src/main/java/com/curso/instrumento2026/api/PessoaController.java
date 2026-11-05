@@ -5,7 +5,6 @@ import com.curso.instrumento2026.api.mapper.PessoaMapper;
 import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.service.PessoaService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,7 +37,6 @@ public class PessoaController {
         content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
     @ApiResponse(responseCode = "409", description = "CPF ou e-mail já cadastrado",
         content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
-    @SecurityRequirements
     @PostMapping
     public ResponseEntity<PessoaResponse> cadastrar(@Valid @RequestBody PessoaRequest request) {
         var cadastrado = service.cadastrar(mapper.toEntity(request));

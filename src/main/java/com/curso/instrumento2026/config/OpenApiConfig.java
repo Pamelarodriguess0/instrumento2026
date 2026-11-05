@@ -6,6 +6,8 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +18,27 @@ import java.util.Set;
 
 @Configuration
 public class OpenApiConfig {
+
+    @Bean
+    public OpenApiCustomizer politicaDeAutorizacaoHttp() {
+        return openApi -> openApi.getPaths().forEach((caminho, item) ->
+                item.readOperationsMap().forEach((metodo, operacao) -> {
+                    boolean publica = (metodo == PathItem.HttpMethod.GET && caminho.equals("/api/health"))
+                            || (metodo == PathItem.HttpMethod.POST && caminho.equals("/api/autenticacao/login"));
+                    if (publica) return;
+                    boolean administrativa = metodo == PathItem.HttpMethod.DELETE
+                            || (metodo == PathItem.HttpMethod.POST && caminho.equals("/api/contas-acesso"))
+                            || caminho.matches("/api/contas-acesso/[^/]+/(perfis|status)");
+                    String permissao = administrativa ? "ADMINISTRADOR" : "OPERADOR ou ADMINISTRADOR";
+                    String descricao = operacao.getDescription();
+                    operacao.setDescription((descricao == null || descricao.isBlank() ? "" : descricao + "\n\n")
+                            + "Autorização: exige Bearer JWT com perfil " + permissao + ".");
+                    operacao.getResponses().putIfAbsent("401", new ApiResponse().description(
+                            "Bearer ausente, inválido ou expirado. Resposta dos filtros de segurança, sem contrato JSON ApiError."));
+                    operacao.getResponses().putIfAbsent("403", new ApiResponse().description(
+                            "Token autenticado sem perfil suficiente. Resposta dos filtros de segurança, sem contrato JSON ApiError."));
+                }));
+    }
 
     @Bean
     public OpenApiCustomizer quantidadeInteiraDoItemVenda() {

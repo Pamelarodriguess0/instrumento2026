@@ -1,5 +1,9 @@
 package com.curso.instrumento2026.service;
 
+import org.springframework.security.concurrent.DelegatingSecurityContextExecutorService;
+
+import org.springframework.security.test.context.support.WithMockUser;
+
 import com.curso.instrumento2026.domain.Pessoa;
 import com.curso.instrumento2026.domain.StatusContaAcesso;
 import com.curso.instrumento2026.repository.ContaAcessoRepository;
@@ -27,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 // Sem transação externa: duas transações sobrepostas leem antes do primeiro commit.
 // As expectativas de preservação de senha/status permanecem vermelhas se houver perda.
+@WithMockUser(roles = "ADMINISTRADOR")
 @SpringBootTest
 @ActiveProfiles("test")
 class ContaAcessoAtualizacaoConcorrenteDiagnosticoTest {
@@ -72,7 +77,7 @@ class ContaAcessoAtualizacaoConcorrenteDiagnosticoTest {
     void devePreservarSenhaNovaEBloqueioEmTransacoesConcorrentes(boolean senhaPrimeiro) throws Exception {
         CountDownLatch carregadas = new CountDownLatch(2);
         CountDownLatch primeiroCommit = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(2);
+        var executor = new DelegatingSecurityContextExecutorService(Executors.newFixedThreadPool(2));
         Sessao senha;
         Sessao bloqueio;
         try {

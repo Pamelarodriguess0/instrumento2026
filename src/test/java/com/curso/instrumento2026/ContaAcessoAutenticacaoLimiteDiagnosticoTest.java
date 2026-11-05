@@ -1,5 +1,7 @@
 package com.curso.instrumento2026;
 
+import static com.curso.instrumento2026.support.AdminFixtureSupport.comoAdministrador;
+
 import com.curso.instrumento2026.domain.Pessoa;
 import com.curso.instrumento2026.repository.PessoaRepository;
 import com.curso.instrumento2026.service.ContaAcessoService;
@@ -61,7 +63,7 @@ class ContaAcessoAutenticacaoLimiteDiagnosticoTest {
         String incorreta = "z".repeat(72);
         assertEquals(72, correta.getBytes(StandardCharsets.UTF_8).length);
         assertEquals(73, excedente.getBytes(StandardCharsets.UTF_8).length);
-        Long contaId = contas.cadastrar(pessoaId, login, correta).getId();
+        Long contaId = comoAdministrador(() -> contas.cadastrar(pessoaId, login, correta)).getId();
         // Cadastro confirmado no banco; não é apenas um experimento de PasswordEncoder.
         assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM conta_acesso WHERE id=?", Integer.class, contaId));
 
