@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.DynamicUpdate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 
 @Entity
@@ -228,6 +229,12 @@ public class Instrumento {
                     "Estoque mínimo não pode ser negativo"
             );
         }
+    }
+
+    public BigDecimal calcularQuantidadeParaReposicao() {
+        return estoqueMinimo.subtract(BigDecimal.valueOf(quantidadeEstoque))
+                .max(BigDecimal.ZERO)
+                .setScale(0, RoundingMode.CEILING);
     }
 
     public BigDecimal calcularValorEstoque() {

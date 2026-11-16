@@ -1,5 +1,7 @@
 package com.curso.instrumento2026.domain;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -7,6 +9,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class InstrumentoTest {
+    @ParameterizedTest
+    @CsvSource({"5, 5.000, 0", "7, 5.000, 0", "2, 5.500, 4", "0, 0.000, 0"})
+    void deveCalcularReposicaoEmUnidadesInteirasSemQuantidadeNegativa(
+            int estoque, String minimo, String esperado) {
+        var instrumento = new Instrumento("TDD-REP-2", "Violino", estoque,
+                new BigDecimal("100.00"), new BigDecimal(minimo),
+                LocalDate.of(2026, 11, 16));
+
+        assertEquals(new BigDecimal(esperado), instrumento.calcularQuantidadeParaReposicao());
+    }
+
+    @Test
+    void deveCalcularQuantidadeParaReposicaoQuandoEstoqueEstaAbaixoDoMinimo() {
+        var instrumento = new Instrumento("TDD-REP-1", "Violino", 2,
+                new BigDecimal("100.00"), new BigDecimal("5.000"),
+                LocalDate.of(2026, 11, 16));
+
+        BigDecimal quantidade = instrumento.calcularQuantidadeParaReposicao();
+
+        assertEquals(new BigDecimal("3"), quantidade);
+    }
+
     @Test
     void deveCriarInstrumentoValido() {
         CategoriaInstrumento categoria = new CategoriaInstrumento(1L, "Cordas");

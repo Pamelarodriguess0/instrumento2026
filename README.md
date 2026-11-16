@@ -1,8 +1,20 @@
 Tema do projeto
 
-Documentação atual: [Aula 13 — JWT e Bearer Token](docs/aula13/README.md).
+Documentação atual: [Aula 15 — Testes, cobertura e TDD](docs/aula15/README.md).
+Fechamento em 16/11/2026: 679 testes aprovados, cobertura de 96,79% das linhas e
+90,05% dos branches. Portão JaCoCo aprovado sobre a coleta final, com mínimos
+oficiais de 70% e 40%. Checkpoints, atividade por risco e RED–GREEN–REFACTOR
+estão documentados; os resultados anteriores permanecem identificados como históricos.
+
+Histórico recente:
+
+- [Aula 14 — Autorização por perfis](docs/aula14/README.md).
+- [Aula 13 — JWT e Bearer Token](docs/aula13/README.md).
+- [Aula 12 — Autenticação e proteção de senhas](docs/aula12/README.md).
+- [Aula 11 — Concorrência](docs/aula11/README.md).
+
 O login em `POST /api/autenticacao/login` emite JWT HS256 para as operações protegidas,
-substituindo HTTP Basic. Consulte a documentação para configurar `JWT_SECRET` localmente,
+substituindo HTTP Basic. Consulte a documentação da Aula 13 para configurar `JWT_SECRET` localmente,
 executar a aplicação, testar Bearer e rodar Newman, sem publicar segredos ou tokens.
 As descrições do tema original abaixo foram preservadas.
 

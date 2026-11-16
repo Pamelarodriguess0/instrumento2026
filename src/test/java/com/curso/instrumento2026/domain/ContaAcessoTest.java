@@ -21,7 +21,7 @@ class ContaAcessoTest {
     @Test
     void deveCriarContaAtivaSomenteOperadorNormalizandoLogin() {
         Pessoa pessoa = pessoa();
-        var conta = new ContaAcesso(pessoa, "  ANA.Souza  ", HASH_SINTETICO);
+        var conta = new ContaAcesso(pessoa, "  ANA.Souza  ", "  " + HASH_SINTETICO + "  ");
         assertNull(conta.getId());
         assertSame(pessoa, conta.getPessoa());
         assertEquals("ana.souza", conta.getLogin());
@@ -29,6 +29,7 @@ class ContaAcessoTest {
         assertEquals(StatusContaAcesso.ATIVA, conta.getStatus());
         assertEquals(Set.of(PerfilAcesso.OPERADOR), conta.getPerfis());
         assertFalse(conta.possuiPerfil(PerfilAcesso.ADMINISTRADOR));
+        assertTrue(conta.podeAutenticar());
     }
 
     @Test
@@ -47,7 +48,9 @@ class ContaAcessoTest {
     @NullAndEmptySource
     @ValueSource(strings = {" ", "\t"})
     void deveRejeitarLoginAusente(String login) {
-        assertThrows(IllegalArgumentException.class, () -> new ContaAcesso(pessoa(), login, HASH_SINTETICO));
+        var erro = assertThrows(IllegalArgumentException.class,
+                () -> new ContaAcesso(pessoa(), login, HASH_SINTETICO));
+        assertEquals("Login é obrigatório", erro.getMessage());
     }
 
     @ParameterizedTest
@@ -64,7 +67,7 @@ class ContaAcessoTest {
     void deveSubstituirHashSemAlterarLoginPessoaOuPerfis() {
         Pessoa pessoa = pessoa();
         var conta = new ContaAcesso(pessoa, "ana", HASH_SINTETICO);
-        conta.alterarSenha("outro-hash-sintetico");
+        conta.alterarSenha("  outro-hash-sintetico  ");
         assertEquals("outro-hash-sintetico", conta.getSenhaHash());
         assertEquals("ana", conta.getLogin());
         assertSame(pessoa, conta.getPessoa());
@@ -85,6 +88,8 @@ class ContaAcessoTest {
         conta.bloquear();
         pessoa.ativar();
         assertFalse(conta.podeAutenticar());
+        conta.ativar();
+        assertTrue(conta.podeAutenticar());
     }
 
     @Test
