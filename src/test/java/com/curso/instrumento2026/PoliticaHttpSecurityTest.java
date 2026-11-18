@@ -64,6 +64,7 @@ class PoliticaHttpSecurityTest {
     @Autowired JwtEncoder encoder;
     @Autowired ApplicationContext contexto;
     @MockitoBean ContaAcessoService contas;
+    @MockitoBean SessaoAutenticacaoService sessoes;
     @MockitoBean PessoaService pessoas;
     @MockitoBean ClienteService clientes;
     @MockitoBean ColaboradorService colaboradores;

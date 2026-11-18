@@ -68,6 +68,8 @@ public final class ContratoOpenApiSupport {
         var caminhos = (ObjectNode) publicado.get("paths");
         for (var novo : Map.of("/api/contas-acesso", "post", "/api/contas-acesso/me", "get",
                 "/api/contas-acesso/me/senha", "put", "/api/autenticacao/login", "post",
+                "/api/autenticacao/refresh", "post", "/api/autenticacao/logout", "post",
+                "/api/autenticacao/logout-todos", "post",
                 "/api/contas-acesso/{id}/perfis", "put", "/api/contas-acesso/{id}/status", "put").entrySet()) {
             assertFalse(exportado.get("paths").has(novo.getKey()));
             var caminho = caminhos.remove(novo.getKey());
@@ -77,7 +79,7 @@ public final class ContratoOpenApiSupport {
         }
         var schemas = (ObjectNode) publicado.get("components").get("schemas");
         for (String schema : List.of("ContaAcessoRequest", "ContaAcessoResponse", "AlterarSenhaContaRequest",
-                "LoginRequest", "TokenResponse", "PerfisContaAcessoRequest", "StatusContaAcessoRequest")) {
+                "LoginRequest", "TokenResponse", "RefreshTokenRequest", "PerfisContaAcessoRequest", "StatusContaAcessoRequest")) {
             assertFalse(exportado.get("components").get("schemas").has(schema));
             assertNotNull(schemas.remove(schema), schema);
         }

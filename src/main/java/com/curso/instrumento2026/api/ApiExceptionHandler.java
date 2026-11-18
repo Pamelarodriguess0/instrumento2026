@@ -2,6 +2,7 @@ package com.curso.instrumento2026.api;
 
 import com.curso.instrumento2026.api.dto.ApiError;
 import com.curso.instrumento2026.exception.CredenciaisInvalidasException;
+import com.curso.instrumento2026.exception.RefreshTokenInvalidoException;
 import com.curso.instrumento2026.exception.RecursoDuplicadoException;
 import com.curso.instrumento2026.exception.RecursoEmUsoException;
 import com.curso.instrumento2026.exception.RecursoNaoEncontradoException;
@@ -19,6 +20,14 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    @ExceptionHandler(RefreshTokenInvalidoException.class)
+    public ResponseEntity<ApiError> tratarRefreshInvalido(
+            RefreshTokenInvalidoException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(
+                Instant.now(), HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                exception.getMessage(), request.getRequestURI(), Map.of()));
+    }
 
     @ExceptionHandler(CredenciaisInvalidasException.class)
     public ResponseEntity<ApiError> tratarCredenciaisInvalidas(

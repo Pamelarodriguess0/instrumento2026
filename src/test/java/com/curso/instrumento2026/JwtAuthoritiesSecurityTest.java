@@ -14,6 +14,8 @@ import com.curso.instrumento2026.domain.StatusContaAcesso;
 import com.curso.instrumento2026.service.AutenticacaoService;
 import com.curso.instrumento2026.service.ContaAcessoService;
 import com.curso.instrumento2026.service.TokenService;
+import com.curso.instrumento2026.service.SessaoAutenticacaoService;
+import com.curso.instrumento2026.service.TokensAutenticacao;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -80,14 +82,19 @@ class JwtAuthoritiesSecurityTest {
     @Autowired MockMvc mvc;
     @Autowired JwtEncoder encoder;
     @Autowired JwtDecoder decoder;
+    @Autowired TokenService tokenService;
     @Autowired JwtAuthenticationConverter converter;
     @Autowired ApplicationContext contexto;
     @MockitoBean ContaAcessoService contas;
+    @MockitoBean SessaoAutenticacaoService sessoes;
     @MockitoBean ContaAcessoMapper mapper;
 
     @BeforeEach
     void configurarConsultaSemPersistencia() {
         assertTrue(contexto.getBeansOfType(DataSource.class).isEmpty(), "Este teste não deve acessar banco de dados");
+        when(sessoes.iniciar(any())).thenAnswer(invocation -> new TokensAutenticacao(
+                tokenService.emitir(invocation.getArgument(0), "familia-sintetica-authorities"),
+                "refresh-sintetico-authorities", Instant.now().plusSeconds(28800)));
         ContaAcesso conta = mock(ContaAcesso.class);
         when(contas.buscarPorLogin(LOGIN)).thenReturn(conta);
         when(contas.cadastrar(any(), any(), any())).thenReturn(conta);

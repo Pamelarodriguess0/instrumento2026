@@ -1,0 +1,2360 @@
+{
+  "info": {
+    "name": "Instrumento 2026 - Aula 16",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ciclo de refresh token, duas rotações, replay, logout local/global e isolamento. Exclusivo para API local conectada a instrumento2026_test. Executar em ordem, uma iteração. Não exportar variáveis preenchidas. Limpeza lógica mantém registros bloqueados/inativos; remoção física somente por procedimento separado e autorizado."
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:18016",
+      "type": "string"
+    },
+    {
+      "key": "adminLogin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminRefreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "expiresAt",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshTokenExpiresAt",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "secondAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "secondRefreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "globalOtherAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "globalOtherRefreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otherAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otherRefreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "replayR1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "opLogin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otherLogin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fixturePassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "opCpf",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otherCpf",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "opPessoaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "opContaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otherPessoaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otherContaId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.info.requestName === '01 Login administrativo') {",
+          " if (!pm.variables.get('adminLogin') || !pm.variables.get('adminPassword')) throw Error('Defina adminLogin/adminPassword somente no ambiente privado.');",
+          " [\"adminAccessToken\",\"adminRefreshToken\",\"accessToken\",\"refreshToken\",\"secondAccessToken\",\"secondRefreshToken\",\"globalOtherAccessToken\",\"globalOtherRefreshToken\",\"otherAccessToken\",\"otherRefreshToken\",\"opPessoaId\",\"opContaId\",\"otherPessoaId\",\"otherContaId\",\"replayR1\",\"anteriorRotacao\",\"limiteAnterior\"].forEach(k => pm.collectionVariables.unset(k));",
+          " const id=pm.variables.replaceIn('{{$guid}}').replace(/-/g,'');",
+          " pm.collectionVariables.set('opLogin','aula16.op.'+id);",
+          " pm.collectionVariables.set('otherLogin','aula16.other.'+id);",
+          " pm.collectionVariables.set('fixturePassword',pm.variables.replaceIn('{{$guid}}')+'Aa!16');",
+          " function cpf(){const d=Array.from({length:9},()=>Math.floor(Math.random()*10)); if(d.every(n=>n===d[0]))d[8]=(d[8]+1)%10; for(let n=9;n<11;n++){let s=0;for(let i=0;i<n;i++)s+=d[i]*(n+1-i);const r=11-s%11;d.push(r>=10?0:r);}return d.join('');}",
+          " const a=cpf();let b=cpf();while(b===a)b=cpf();pm.collectionVariables.set('opCpf',a);pm.collectionVariables.set('otherCpf',b);",
+          "}",
+          ""
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 — Preparação e contas próprias",
+      "item": [
+        {
+          "name": "01 Login administrativo",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{adminLogin}}\",\n  \"senha\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('adminAccessToken', p.accessToken);",
+                  " pm.collectionVariables.set('adminRefreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Criar pessoa op",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pessoas"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Fixture Aula16 op\",\n  \"email\": \"{{opLogin}}@example.com\",\n  \"cpf\": \"{{opCpf}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 201;",
+                  "pm.test('Status HTTP 201', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 201) pm.collectionVariables.set('opPessoaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Criar conta op",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contas-acesso",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contas-acesso"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{opPessoaId}},\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 201;",
+                  "pm.test('Status HTTP 201', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 201) pm.collectionVariables.set('opContaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Criar pessoa other",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pessoas"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Fixture Aula16 other\",\n  \"email\": \"{{otherLogin}}@example.com\",\n  \"cpf\": \"{{otherCpf}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 201;",
+                  "pm.test('Status HTTP 201', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 201) pm.collectionVariables.set('otherPessoaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Criar conta other",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contas-acesso",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contas-acesso"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{otherPessoaId}},\n  \"login\": \"{{otherLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 201;",
+                  "pm.test('Status HTTP 201', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 201) pm.collectionVariables.set('otherContaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Login da outra conta",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{otherLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('otherAccessToken', p.accessToken);",
+                  " pm.collectionVariables.set('otherRefreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 — Autorização, duas rotações e replay",
+      "item": [
+        {
+          "name": "05 Login OPERADOR",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('accessToken', p.accessToken);",
+                  " pm.collectionVariables.set('refreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Consulta autorizada",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contas-acesso/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contas-acesso",
+                "me"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 OPERADOR não cria conta",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contas-acesso",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contas-acesso"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pessoaId\": {{opPessoaId}},\n  \"login\": \"proibido.aula16\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 403;",
+                  "pm.test('Status HTTP 403', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 R1 para R2",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('replayR1', pm.collectionVariables.get('refreshToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('accessToken', p.accessToken);",
+                  " pm.collectionVariables.set('refreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 R2 para R3",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('anteriorRotacao',pm.collectionVariables.get('refreshToken'));",
+                  "pm.collectionVariables.set('limiteAnterior',pm.collectionVariables.get('refreshTokenExpiresAt'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('accessToken', p.accessToken);",
+                  " pm.collectionVariables.set('refreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}",
+                  "pm.test('Rotação substitui segredo e preserva prazo',function(){pm.expect(pm.collectionVariables.get('refreshToken') !== pm.collectionVariables.get('anteriorRotacao') && pm.collectionVariables.get('refreshTokenExpiresAt') === pm.collectionVariables.get('limiteAnterior')).to.eql(true);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Replay de R1",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{replayR1}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('ApiError genérico', function () { const e=pm.response.json(); pm.expect(e.status === 401 && e.message === 'Refresh token inválido ou expirado' && e.path === '/api/autenticacao/refresh' && typeof e.fields === 'object').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 R3 também foi revogado",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('ApiError genérico', function () { const e=pm.response.json(); pm.expect(e.status === 401 && e.message === 'Refresh token inválido ou expirado' && e.path === '/api/autenticacao/refresh' && typeof e.fields === 'object').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 — Logout individual e isolamento",
+      "item": [
+        {
+          "name": "12 Nova família OPERADOR",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('accessToken', p.accessToken);",
+                  " pm.collectionVariables.set('refreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 Segunda família da mesma conta",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('secondAccessToken', p.accessToken);",
+                  " pm.collectionVariables.set('secondRefreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 Logout da primeira família",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "logout"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 204;",
+                  "pm.test('Status HTTP 204', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text() === '').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15 Repetir logout",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "logout"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 204;",
+                  "pm.test('Status HTTP 204', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text() === '').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "16 Logout desconhecido",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "logout"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"token-sintetico-desconhecido-aula16\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 204;",
+                  "pm.test('Status HTTP 204', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text() === '').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "17 Refresh após logout",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('ApiError genérico', function () { const e=pm.response.json(); pm.expect(e.status === 401 && e.message === 'Refresh token inválido ou expirado' && e.path === '/api/autenticacao/refresh' && typeof e.fields === 'object').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18 Access anterior ainda funciona",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contas-acesso/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contas-acesso",
+                "me"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "19 Outra família continua válida",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{secondRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('secondAccessToken', p.accessToken);",
+                  " pm.collectionVariables.set('secondRefreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 — Logout global e isolamento entre contas",
+      "item": [
+        {
+          "name": "20 Login primeira família global",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('accessToken', p.accessToken);",
+                  " pm.collectionVariables.set('refreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "21 Login segunda família global",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('globalOtherAccessToken', p.accessToken);",
+                  " pm.collectionVariables.set('globalOtherRefreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "22 Global sem Bearer",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/logout-todos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "logout-todos"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "",
+                  "pm.test('Rejeição do filtro',function(){pm.expect(pm.response.text() === '' && /^Bearer/.test(pm.response.headers.get('WWW-Authenticate') || '')).to.eql(true);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "23 Global com Bearer inválido",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "token-sintetico-invalido",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/logout-todos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "logout-todos"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "",
+                  "pm.test('Rejeição do filtro',function(){pm.expect(pm.response.text() === '' && /^Bearer/.test(pm.response.headers.get('WWW-Authenticate') || '')).to.eql(true);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "24 Global somente subject autenticado",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/logout-todos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "logout-todos"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contaId\": {{otherContaId}},\n  \"login\": \"{{otherLogin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 204;",
+                  "pm.test('Status HTTP 204', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text() === '').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "25 Primeira família global revogada",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('ApiError genérico', function () { const e=pm.response.json(); pm.expect(e.status === 401 && e.message === 'Refresh token inválido ou expirado' && e.path === '/api/autenticacao/refresh' && typeof e.fields === 'object').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "26 Segunda família global revogada",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{globalOtherRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('ApiError genérico', function () { const e=pm.response.json(); pm.expect(e.status === 401 && e.message === 'Refresh token inválido ou expirado' && e.path === '/api/autenticacao/refresh' && typeof e.fields === 'object').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "27 Outra conta preservada",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{otherRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "if (pm.response.code === 200) {",
+                  " const p = pm.response.json();",
+                  " pm.test('Par completo e prazos coerentes', function () {",
+                  "  pm.expect(typeof p.accessToken === 'string' && typeof p.refreshToken === 'string' && /^[A-Za-z0-9_-]{43}$/.test(p.refreshToken) && p.tokenType === 'Bearer' && p.expiresIn > 0 && Date.parse(p.refreshTokenExpiresAt) > Date.parse(p.expiresAt)).to.eql(true);",
+                  " });",
+                  " pm.collectionVariables.set('otherAccessToken', p.accessToken);",
+                  " pm.collectionVariables.set('otherRefreshToken', p.refreshToken);",
+                  " pm.collectionVariables.set('expiresAt', p.expiresAt);",
+                  " pm.collectionVariables.set('refreshTokenExpiresAt', p.refreshTokenExpiresAt);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "28 Access anterior ao global ainda funciona",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contas-acesso/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contas-acesso",
+                "me"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 — Erros de entrada",
+      "item": [
+        {
+          "name": "29 Refresh ausente",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('ApiError genérico', function () { const e=pm.response.json(); pm.expect(e.status === 401 && e.message === 'Refresh token inválido ou expirado' && e.path === '/api/autenticacao/refresh' && typeof e.fields === 'object').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "30 Refresh vazio",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('ApiError genérico', function () { const e=pm.response.json(); pm.expect(e.status === 401 && e.message === 'Refresh token inválido ou expirado' && e.path === '/api/autenticacao/refresh' && typeof e.fields === 'object').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "31 Refresh desconhecido",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"token-sintetico-desconhecido-aula16\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 401;",
+                  "pm.test('Status HTTP 401', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('ApiError genérico', function () { const e=pm.response.json(); pm.expect(e.status === 401 && e.message === 'Refresh token inválido ou expirado' && e.path === '/api/autenticacao/refresh' && typeof e.fields === 'object').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "32 JSON malformado",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "refresh"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 400;",
+                  "pm.test('Status HTTP 400', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 — Encerramento e limpeza lógica das fixtures",
+      "item": [
+        {
+          "name": "33 Logout da outra conta",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "logout"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{otherRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 204;",
+                  "pm.test('Status HTTP 204', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text() === '').to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "34 Bloquear conta fixture op",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contas-acesso/{{opContaId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contas-acesso",
+                "{{opContaId}}",
+                "status"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"BLOQUEADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "35 Inativar pessoa fixture op",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas/{{opPessoaId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pessoas",
+                "{{opPessoaId}}",
+                "status"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INATIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "34 Bloquear conta fixture other",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contas-acesso/{{otherContaId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contas-acesso",
+                "{{otherContaId}}",
+                "status"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"BLOQUEADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "35 Inativar pessoa fixture other",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas/{{otherPessoaId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pessoas",
+                "{{otherPessoaId}}",
+                "status"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INATIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 200;",
+                  "pm.test('Status HTTP 200', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "36 Encerrar sessão administrativa criada neste run",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "logout"
+              ]
+            },
+            "description": "Executar em ordem, exclusivamente na API ligada ao banco de teste. Credenciais somente em ambiente privado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{adminRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const esperado = 204;",
+                  "pm.test('Status HTTP 204', function () { pm.expect(pm.response.code).to.eql(esperado); });",
+                  "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
+                  "pm.test('Sem corpo', function () { pm.expect(pm.response.text() === '').to.eql(true); });",
+                  "",
+                  "['adminAccessToken','adminRefreshToken','accessToken','refreshToken','secondAccessToken','secondRefreshToken','globalOtherAccessToken','globalOtherRefreshToken','otherAccessToken','otherRefreshToken','replayR1','anteriorRotacao','fixturePassword'].forEach(k => pm.collectionVariables.unset(k));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

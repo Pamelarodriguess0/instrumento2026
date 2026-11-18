@@ -80,12 +80,24 @@ class AutenticacaoJwtTest {
     void loginDeveRetornarBearerComClaimsControladosPeloServidorEIdentificarMe() throws Exception {
         var resultado = mvc.perform(loginRequest(login, SENHA)).andExpect(status().isOk())
                 .andExpect(jsonPath("tokenType").value("Bearer")).andExpect(jsonPath("expiresIn").value(1800))
-                .andExpect(jsonPath("$.length()").value(4)).andExpect(jsonPath("senha").doesNotExist())
+                .andExpect(jsonPath("$.length()").value(6))
+                .andExpect(jsonPath("refreshToken").isNotEmpty())
+                .andExpect(jsonPath("refreshTokenExpiresAt").isString())
+                .andExpect(jsonPath("senha").doesNotExist())
                 .andExpect(jsonPath("senhaHash").doesNotExist()).andReturn();
         String emitido = JsonPath.read(resultado.getResponse().getContentAsString(), "$.accessToken");
         String expiresAt = JsonPath.read(resultado.getResponse().getContentAsString(), "$.expiresAt");
         var jwt = decoder.decode(emitido);
-        assertEquals(Set.of("iss", "sub", "iat", "exp", "jti", "perfis"), jwt.getClaims().keySet());
+        Map<String, Object> resposta = JsonPath.read(resultado.getResponse().getContentAsString(), "$");
+        assertEquals(Set.of("accessToken", "tokenType", "expiresIn", "expiresAt", "refreshToken", "refreshTokenExpiresAt"),
+                resposta.keySet());
+        assertEquals(Set.of("iss", "sub", "iat", "exp", "jti", "perfis", "sid"), jwt.getClaims().keySet());
+        String sid = jwt.getClaimAsString("sid");
+        assertNotNull(sid);
+        assertNotNull(UUID.fromString(sid));
+        assertEquals(jdbc.queryForObject("SELECT s.familia_id FROM sessao_refresh_token s "
+                + "JOIN conta_acesso c ON c.id=s.conta_acesso_id WHERE c.pessoa_id=?", String.class, pessoaId), sid);
+        assertTrue(Instant.parse((String) resposta.get("refreshTokenExpiresAt")).isAfter(jwt.getIssuedAt()));
         assertEquals("HS256", jwt.getHeaders().get("alg"));
         assertEquals(ISSUER, jwt.getIssuer().toString());
         assertEquals(login, jwt.getSubject());

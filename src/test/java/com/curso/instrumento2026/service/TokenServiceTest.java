@@ -1,7 +1,9 @@
 package com.curso.instrumento2026.service;
 
 import com.curso.instrumento2026.config.JwtProperties;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -14,8 +16,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TokenServiceTest {
-    @Test
-    void deveUsarClockInjetadoEPerfisAutenticadosSemIncluirCredenciais() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void devePreservarJwtAssinadoComESemSessao(boolean comSessao) {
         Instant instante = Instant.parse("2026-11-03T12:00:00.123456Z");
         var key = new SecretKeySpec(new byte[32], "HmacSHA256");
         var encoder = NimbusJwtEncoder.withSecretKey(key).algorithm(MacAlgorithm.HS256).build();
@@ -24,18 +27,42 @@ class TokenServiceTest {
         var auth = UsernamePasswordAuthenticationToken.authenticated("operador.teste", "credencial-ficticia", List.of(
                 new SimpleGrantedAuthority("ROLE_OPERADOR"), new SimpleGrantedAuthority("ROLE_ADMINISTRADOR"),
                 new SimpleGrantedAuthority("SCOPE_outro")));
-        var token = service.emitir(auth);
+        String familiaId = "cc3da25a-0d05-48e3-8054-90b499dd336a";
+        var token = comSessao ? service.emitir(auth, familiaId) : service.emitir(auth);
         var decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
         var tempo = new JwtTimestampValidator();
         tempo.setClock(Clock.fixed(instante, ZoneOffset.UTC));
         decoder.setJwtValidator(new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(
                 tempo, new JwtIssuerValidator(props.issuer())));
         var jwt = decoder.decode(token.valor());
+        assertEquals("HS256", jwt.getHeaders().get("alg"));
+        assertEquals(props.issuer(), jwt.getIssuer().toString());
+        assertEquals(auth.getName(), jwt.getSubject());
+        assertNotNull(jwt.getId());
+        assertDoesNotThrow(() -> java.util.UUID.fromString(jwt.getId()));
+        var outro = comSessao ? service.emitir(auth, familiaId) : service.emitir(auth);
+        assertNotEquals(jwt.getId(), decoder.decode(outro.valor()).getId());
+        assertEquals(comSessao, jwt.getClaims().containsKey("sid"));
+        if (comSessao) assertEquals(familiaId, jwt.getClaimAsString("sid"));
         assertEquals(Instant.parse("2026-11-03T12:00:00Z"), jwt.getIssuedAt());
         assertEquals(Instant.parse("2026-11-03T12:30:00Z"), token.expiraEm());
+        assertEquals(token.expiraEm(), jwt.getExpiresAt());
         assertEquals(1800, token.duracaoSegundos());
         assertEquals(List.of("ADMINISTRADOR", "OPERADOR"), jwt.getClaimAsStringList("perfis"));
         assertFalse(jwt.getClaims().toString().contains("credencial-ficticia"));
         assertFalse(token.toString().contains(token.valor()));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "\t"})
+    void deveRejeitarSessaoAusenteNaNovaSobrecarga(String sessaoId) {
+        var encoder = org.mockito.Mockito.mock(JwtEncoder.class);
+        var service = new TokenService(encoder,
+                new JwtProperties("https://instrumento2026.local", Duration.ofMinutes(30), "nao-utilizada-neste-teste"),
+                Clock.fixed(Instant.parse("2026-11-03T12:00:00Z"), ZoneOffset.UTC));
+        var auth = UsernamePasswordAuthenticationToken.authenticated("operador.teste", null, List.of());
+        assertThrows(IllegalArgumentException.class, () -> service.emitir(auth, sessaoId));
+        org.mockito.Mockito.verifyNoInteractions(encoder);
     }
 }

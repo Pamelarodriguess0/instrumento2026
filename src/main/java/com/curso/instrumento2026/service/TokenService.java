@@ -26,14 +26,29 @@ public class TokenService {
     }
 
     public TokenAcesso emitir(Authentication authentication) {
+        return emitirToken(authentication, null);
+    }
+
+    public TokenAcesso emitir(Authentication authentication, String sessaoId) {
+        if (sessaoId == null || sessaoId.isBlank()) {
+            throw new IllegalArgumentException("Identificador da sessão é obrigatório");
+        }
+        return emitirToken(authentication, sessaoId);
+    }
+
+    private TokenAcesso emitirToken(Authentication authentication, String sessaoId) {
         Instant emitidoEm = clock.instant().truncatedTo(ChronoUnit.SECONDS);
         Instant expiraEm = emitidoEm.plus(properties.expiration());
         var perfis = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
                 .filter(valor -> valor.startsWith("ROLE_"))
                 .map(valor -> valor.substring("ROLE_".length())).sorted().toList();
-        var claims = JwtClaimsSet.builder().issuer(properties.issuer()).subject(authentication.getName())
+        var builder = JwtClaimsSet.builder().issuer(properties.issuer()).subject(authentication.getName())
                 .issuedAt(emitidoEm).expiresAt(expiraEm).id(UUID.randomUUID().toString())
-                .claim("perfis", perfis).build();
+                .claim("perfis", perfis);
+        if (sessaoId != null) {
+            builder.claim("sid", sessaoId);
+        }
+        var claims = builder.build();
         String valor = encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
         return new TokenAcesso(valor, expiraEm, properties.expiration().getSeconds());
     }

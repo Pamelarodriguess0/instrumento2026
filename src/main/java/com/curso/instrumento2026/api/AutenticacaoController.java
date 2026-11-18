@@ -2,7 +2,12 @@ package com.curso.instrumento2026.api;
 
 import com.curso.instrumento2026.api.dto.LoginRequest;
 import com.curso.instrumento2026.api.dto.TokenResponse;
+import com.curso.instrumento2026.api.dto.RefreshTokenRequest;
 import com.curso.instrumento2026.service.AutenticacaoService;
+import com.curso.instrumento2026.service.SessaoAutenticacaoService;
+import com.curso.instrumento2026.service.TokensAutenticacao;
+import org.springframework.http.ResponseEntity;
+import java.security.Principal;
 import jakarta.validation.Valid;
 import com.curso.instrumento2026.api.dto.ApiError;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,9 +21,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/autenticacao")
 public class AutenticacaoController {
     private final AutenticacaoService service;
+    private final SessaoAutenticacaoService sessoes;
 
-    public AutenticacaoController(AutenticacaoService service) {
+    public AutenticacaoController(AutenticacaoService service, SessaoAutenticacaoService sessoes) {
         this.service = service;
+        this.sessoes = sessoes;
     }
 
     @Operation(summary = "Autenticar e emitir JWT",
@@ -37,7 +44,29 @@ public class AutenticacaoController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
     @PostMapping("/login")
     public TokenResponse login(@Valid @RequestBody LoginRequest request) {
-        var token = service.autenticar(request.login(), request.senha());
-        return new TokenResponse(token.valor(), "Bearer", token.duracaoSegundos(), token.expiraEm());
+        return resposta(service.autenticarComSessao(request.login(), request.senha()));
+    }
+
+    @PostMapping("/refresh")
+    public TokenResponse refresh(@RequestBody(required = false) RefreshTokenRequest request) {
+        return resposta(sessoes.renovar(request == null ? null : request.refreshToken()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody(required = false) RefreshTokenRequest request) {
+        sessoes.encerrar(request == null ? null : request.refreshToken());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/logout-todos")
+    public ResponseEntity<Void> logoutTodos(Principal principal) {
+        sessoes.encerrarTodas(principal.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    private static TokenResponse resposta(TokensAutenticacao par) {
+        var token = par.accessToken();
+        return new TokenResponse(token.valor(), "Bearer", token.duracaoSegundos(), token.expiraEm(),
+                par.refreshToken(), par.refreshTokenExpiresAt());
     }
 }

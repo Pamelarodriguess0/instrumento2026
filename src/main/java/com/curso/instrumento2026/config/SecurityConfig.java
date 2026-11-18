@@ -32,7 +32,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET, CONSULTAS_PUBLICAS).permitAll()
                         .requestMatchers(HttpMethod.HEAD, CONSULTAS_PUBLICAS).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/autenticacao/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/autenticacao/login",
+                                "/api/autenticacao/refresh", "/api/autenticacao/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/autenticacao/logout-todos").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/contas-acesso").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/contas-acesso/*/perfis", "/api/contas-acesso/*/status")
                             .hasRole("ADMINISTRADOR")

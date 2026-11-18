@@ -53,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         org.springdoc.webmvc.ui.SwaggerConfig.class,
         org.springdoc.core.properties.SwaggerUiConfigProperties.class,
         org.springdoc.core.properties.SwaggerUiOAuthProperties.class})
-@MockitoBean(types = {AutenticacaoService.class, ContaAcessoService.class, PessoaService.class, ClienteService.class,
+@MockitoBean(types = {AutenticacaoService.class, SessaoAutenticacaoService.class, ContaAcessoService.class, PessoaService.class, ClienteService.class,
         ColaboradorService.class, CategoriaInstrumentoService.class, FornecedorService.class, InstrumentoService.class,
         VendaService.class, ContaAcessoMapper.class, PessoaMapper.class, ClienteMapper.class, ColaboradorMapper.class,
         CategoriaInstrumentoMapper.class, FornecedorMapper.class, InstrumentoMapper.class, VendaMapper.class})
@@ -192,14 +192,15 @@ class OpenApiDocumentationTest {
     }
 
     @Test
-    void devePublicarBearerGlobalComExcecoesSomenteEmHealthELogin() throws Exception {
+    void devePublicarBearerGlobalComExcecoesPublicasDoCiclo() throws Exception {
         var resposta = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
         var documento = Yaml.mapper().readTree(resposta.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
         var bearer = Yaml.mapper().readTree("[{\"bearerAuth\":[]}]");
         assertEquals(bearer, documento.get("security"));
         assertEquals(Yaml.mapper().readTree("{\"bearerAuth\":{\"type\":\"http\",\"scheme\":\"bearer\",\"bearerFormat\":\"JWT\"}}"),
                 documento.get("components").get("securitySchemes"));
-        Set<String> publicas = Set.of("get /api/health", "post /api/autenticacao/login");
+        Set<String> publicas = Set.of("get /api/health", "post /api/autenticacao/login",
+                "post /api/autenticacao/refresh", "post /api/autenticacao/logout");
         Set<String> encontradas = new java.util.HashSet<>();
         documento.get("paths").fields().forEachRemaining(rota -> rota.getValue().fields().forEachRemaining(metodo -> {
             String operacao = metodo.getKey() + " " + rota.getKey();
@@ -210,6 +211,11 @@ class OpenApiDocumentationTest {
                 encontradas.add(operacao);
             } else {
                 assertEquals(bearer, seguranca, operacao);
+                if (operacao.equals("post /api/autenticacao/logout-todos")) {
+                    assertFalse(metodo.getValue().path("responses").has("403"));
+                    assertTrue(metodo.getValue().path("description").asText().contains("sem requisito adicional de perfil"));
+                    return;
+                }
                 boolean administrativa = metodo.getKey().equals("delete")
                         || operacao.equals("post /api/contas-acesso")
                         || rota.getKey().matches("/api/contas-acesso/[^/]+/(perfis|status)");
@@ -440,7 +446,7 @@ class OpenApiDocumentationTest {
         assertFalse(senha.has("example"));
         Set<String> campos = new java.util.HashSet<>();
         schemas.at("/TokenResponse/properties").fieldNames().forEachRemaining(campos::add);
-        assertEquals(Set.of("accessToken", "tokenType", "expiresIn", "expiresAt"), campos);
+        assertEquals(Set.of("accessToken", "tokenType", "expiresIn", "expiresAt", "refreshToken", "refreshTokenExpiresAt"), campos);
         assertEquals("Bearer", schemas.at("/TokenResponse/properties/tokenType/example").asText());
         assertEquals(1800, schemas.at("/TokenResponse/properties/expiresIn/example").asInt());
         assertEquals("date-time", schemas.at("/TokenResponse/properties/expiresAt/format").asText());
@@ -454,6 +460,41 @@ class OpenApiDocumentationTest {
             assertFalse(operacao.get("description").asText().contains("HTTP Basic"));
             assertFalse(operacao.at("/responses/401").has("content"));
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"refresh,200,200-400-401", "logout,204,204-400-401", "logout-todos,204,204-401"})
+    void deveDocumentarContratosReaisDoCiclo(String rota, String sucesso, String codigos) throws Exception {
+        var resposta = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+        var doc = Yaml.mapper().readTree(resposta.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        var op = doc.get("paths").get("/api/autenticacao/" + rota).get("post");
+        Set<String> encontrados = new java.util.HashSet<>();
+        op.get("responses").fieldNames().forEachRemaining(encontrados::add);
+        assertEquals(Set.of(codigos.split("-")), encontrados);
+        assertTrue(op.get("description").asText().contains("stateless"));
+        assertTrue(op.get("description").asText().contains("não invalida imediatamente"));
+        if (rota.equals("logout-todos")) {
+            assertEquals(Yaml.mapper().readTree("[{\"bearerAuth\":[]}]"), op.get("security"));
+            assertFalse(op.has("requestBody"));
+        } else {
+            assertTrue(op.get("security").isEmpty());
+            assertEquals("#/components/schemas/RefreshTokenRequest",op.at("/requestBody/content/application~1json/schema/$ref").asText());
+            assertFalse(op.at("/requestBody/required").asBoolean());
+        }
+        if (sucesso.equals("204")) assertFalse(op.get("responses").get(sucesso).has("content"));
+        else assertEquals("#/components/schemas/TokenResponse", op.at("/responses/200/content/application~1json/schema/$ref").asText());
+        if (!rota.equals("logout")) {
+            assertEquals("#/components/schemas/ApiError", op.at("/responses/401/content/application~1json/schema/$ref").asText());
+            assertTrue(op.at("/responses/401/description").asText().contains("sem corpo ApiError"));
+        } else assertFalse(op.at("/responses/401").has("content"));
+        var schemas=doc.at("/components/schemas");
+        assertTrue(schemas.at("/RefreshTokenRequest/properties/refreshToken/writeOnly").asBoolean());
+        assertTrue(schemas.at("/TokenResponse/properties/refreshToken/readOnly").asBoolean());
+        assertEquals("date-time",schemas.at("/TokenResponse/properties/refreshTokenExpiresAt/format").asText());
+        assertEquals(6,schemas.at("/TokenResponse/required").size());
+        assertFalse(schemas.at("/TokenResponse/properties/refreshToken").has("example"));
+        assertFalse(schemas.at("/RefreshTokenRequest/properties/refreshToken").has("example"));
+        assertFalse(schemas.toString().contains("tokenHash"));
     }
 
     @Test
