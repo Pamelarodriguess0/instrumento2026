@@ -23,7 +23,8 @@ class ContaAcessoServiceUnitTest {
     private final ContaAcessoRepository contas = mock(ContaAcessoRepository.class);
     private final PessoaRepository pessoas = mock(PessoaRepository.class);
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
-    private final ContaAcessoService service = new ContaAcessoService(contas, pessoas, encoder);
+    private final ContaAcessoService service = new ContaAcessoService(contas, pessoas, encoder,
+            mock(AuditoriaSegurancaService.class));
 
     private DataIntegrityViolationException prepararFalha(String constraint, String sqlState) {
         when(pessoas.findById(1L)).thenReturn(Optional.of(new Pessoa("Ana", "ana@example.com", "52998224725", LocalDate.now())));

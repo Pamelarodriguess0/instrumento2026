@@ -38,6 +38,7 @@ class ContaAcessoAutenticacaoLimiteDiagnosticoTest {
     @Autowired PlatformTransactionManager transactionManager;
     private Long pessoaId;
     private String login;
+    private Long contaId;
 
     @BeforeEach
     void preparar() {
@@ -50,6 +51,7 @@ class ContaAcessoAutenticacaoLimiteDiagnosticoTest {
     @AfterEach
     void limpar() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            limparAuditoriaDaFixture(jdbc, contaId, login);
             jdbc.update("DELETE FROM conta_acesso WHERE pessoa_id=?", pessoaId);
             jdbc.update("DELETE FROM pessoa WHERE id=?", pessoaId);
         });
@@ -63,7 +65,7 @@ class ContaAcessoAutenticacaoLimiteDiagnosticoTest {
         String incorreta = "z".repeat(72);
         assertEquals(72, correta.getBytes(StandardCharsets.UTF_8).length);
         assertEquals(73, excedente.getBytes(StandardCharsets.UTF_8).length);
-        Long contaId = comoAdministrador(() -> contas.cadastrar(pessoaId, login, correta)).getId();
+        contaId = comoAdministrador(() -> contas.cadastrar(pessoaId, login, correta)).getId();
         // Cadastro confirmado no banco; não é apenas um experimento de PasswordEncoder.
         assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM conta_acesso WHERE id=?", Integer.class, contaId));
 

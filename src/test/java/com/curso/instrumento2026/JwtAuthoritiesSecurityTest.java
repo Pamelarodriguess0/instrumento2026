@@ -10,9 +10,12 @@ import com.curso.instrumento2026.config.PasswordEncoderConfig;
 import com.curso.instrumento2026.config.SecurityConfig;
 import com.curso.instrumento2026.domain.ContaAcesso;
 import com.curso.instrumento2026.domain.PerfilAcesso;
+import com.curso.instrumento2026.domain.ProtecaoAutenticacao;
 import com.curso.instrumento2026.domain.StatusContaAcesso;
 import com.curso.instrumento2026.service.AutenticacaoService;
+import com.curso.instrumento2026.service.AuditoriaSegurancaService;
 import com.curso.instrumento2026.service.ContaAcessoService;
+import com.curso.instrumento2026.service.ProtecaoAutenticacaoService;
 import com.curso.instrumento2026.service.TokenService;
 import com.curso.instrumento2026.service.SessaoAutenticacaoService;
 import com.curso.instrumento2026.service.TokensAutenticacao;
@@ -87,11 +90,14 @@ class JwtAuthoritiesSecurityTest {
     @Autowired ApplicationContext contexto;
     @MockitoBean ContaAcessoService contas;
     @MockitoBean SessaoAutenticacaoService sessoes;
+    @MockitoBean ProtecaoAutenticacaoService protecao;
+    @MockitoBean AuditoriaSegurancaService auditoria;
     @MockitoBean ContaAcessoMapper mapper;
 
     @BeforeEach
     void configurarConsultaSemPersistencia() {
         assertTrue(contexto.getBeansOfType(DataSource.class).isEmpty(), "Este teste não deve acessar banco de dados");
+        when(protecao.bloquearParaTentativa(anyString())).thenReturn(new ProtecaoAutenticacao("a".repeat(64)));
         when(sessoes.iniciar(any())).thenAnswer(invocation -> new TokensAutenticacao(
                 tokenService.emitir(invocation.getArgument(0), "familia-sintetica-authorities"),
                 "refresh-sintetico-authorities", Instant.now().plusSeconds(28800)));

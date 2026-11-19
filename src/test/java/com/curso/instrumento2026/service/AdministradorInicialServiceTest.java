@@ -49,6 +49,7 @@ class AdministradorInicialServiceTest {
     @Autowired PasswordEncoder encoder;
     @Autowired ApplicationContext contexto;
     @MockitoBean ContaAcessoRepository contas;
+    @MockitoBean AuditoriaSegurancaService auditoria;
     @MockitoBean PessoaRepository pessoas;
     @MockitoBean PlatformTransactionManager transactionManager;
     private AtomicReference<ContaAcesso> gravada;

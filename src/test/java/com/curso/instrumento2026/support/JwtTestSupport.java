@@ -7,6 +7,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -15,12 +16,38 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.Map;
 import java.util.List;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Locale;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public final class JwtTestSupport {
     private JwtTestSupport() {}
+
+    public static String chaveLogin(String login) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(login.trim().toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    public static void limparAuditoriaDaFixture(JdbcTemplate jdbc, Long contaId, String... logins) {
+        if (contaId != null) {
+            jdbc.update("DELETE FROM evento_seguranca WHERE alvo_conta_id = ?", contaId);
+        }
+        for (String login : logins) {
+            if (login == null) continue;
+            String chave = chaveLogin(login);
+            jdbc.update("DELETE FROM evento_seguranca WHERE identificador_hash = ?", chave);
+            jdbc.update("DELETE FROM protecao_autenticacao WHERE chave_login = ?", chave);
+        }
+    }
 
     public static MockHttpServletRequestBuilder loginRequest(String login, String senha) {
         return post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON)

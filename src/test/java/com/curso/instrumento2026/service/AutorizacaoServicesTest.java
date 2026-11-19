@@ -56,6 +56,7 @@ class AutorizacaoServicesTest {
     @Autowired VendaService vendas;
     @Autowired ApplicationContext contexto;
     @MockitoBean ContaAcessoRepository contaRepository;
+    @MockitoBean AuditoriaSegurancaService auditoria;
     @MockitoBean PessoaRepository pessoaRepository;
     @MockitoBean CategoriaInstrumentoRepository categoriaRepository;
     @MockitoBean InstrumentoRepository instrumentoRepository;

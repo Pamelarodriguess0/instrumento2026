@@ -35,6 +35,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/autenticacao/login",
                                 "/api/autenticacao/refresh", "/api/autenticacao/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/autenticacao/logout-todos").authenticated()
+                        .requestMatchers("/api/auditoria-seguranca", "/api/auditoria-seguranca/**")
+                            .hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.POST, "/api/contas-acesso").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/contas-acesso/*/perfis", "/api/contas-acesso/*/status")
                             .hasRole("ADMINISTRADOR")

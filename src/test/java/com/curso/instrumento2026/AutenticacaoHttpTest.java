@@ -45,10 +45,15 @@ class AutenticacaoHttpTest {
                 "refresh-sintetico",Instant.parse("2026-11-18T02:30:00Z"));
     }
     @Test void deveEntregarMesmoContratoNoLoginENaRenovacaoPublicos() throws Exception {
-        when(login.autenticarComSessao("operador","senha-sintetica")).thenReturn(par);
+        when(login.autenticarComSessao("operador","senha-sintetica","192.0.2.10")).thenReturn(par);
         when(sessoes.renovar("refresh-sintetico")).thenReturn(par);
         for(var request:List.of(
-                post("/api/autenticacao/login").content("{\"login\":\"operador\",\"senha\":\"senha-sintetica\"}"),
+                post("/api/autenticacao/login").content("{\"login\":\"operador\",\"senha\":\"senha-sintetica\"}")
+                        .header("X-Forwarded-For", "198.51.100.20")
+                        .with(request -> {
+                            request.setRemoteAddr("192.0.2.10");
+                            return request;
+                        }),
                 post("/api/autenticacao/refresh").content("{\"refreshToken\":\"refresh-sintetico\"}"))) {
             var resultado=mvc.perform(request.contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(6))

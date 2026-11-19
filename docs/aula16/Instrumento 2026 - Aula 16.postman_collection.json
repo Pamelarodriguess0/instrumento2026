@@ -2348,7 +2348,472 @@
                   "pm.test('Sem JSESSIONID', function () { pm.expect(!/JSESSIONID/i.test(pm.response.headers.get('Set-Cookie') || '')).to.eql(true); });",
                   "pm.test('Sem corpo', function () { pm.expect(pm.response.text() === '').to.eql(true); });",
                   "",
-                  "['adminAccessToken','adminRefreshToken','accessToken','refreshToken','secondAccessToken','secondRefreshToken','globalOtherAccessToken','globalOtherRefreshToken','otherAccessToken','otherRefreshToken','replayR1','anteriorRotacao','fixturePassword'].forEach(k => pm.collectionVariables.unset(k));"
+                  "['adminAccessToken','adminRefreshToken','accessToken','refreshToken','secondAccessToken','secondRefreshToken','globalOtherAccessToken','globalOtherRefreshToken','otherAccessToken','otherRefreshToken','replayR1','anteriorRotacao','fixturePassword'].forEach(k => pm.collectionVariables.unset(k));",
+                  "pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11 — Proteção e auditoria da autenticação",
+      "description": "Execute esta pasta separadamente, após a pasta 01 em uma execução nova, exclusivamente na API do banco de teste. Use a conta descartável opLogin. A pasta 06 bloqueia as contas e descarta os tokens, portanto não deve anteceder este laboratório.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "['opLogin', 'fixturePassword', 'adminAccessToken', 'otherAccessToken'].forEach(chave => {",
+              "  if (!pm.variables.get(chave)) throw Error('Execute primeiro a pasta 01 para criar fixtures descartáveis e obter os Bearers.');",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.request.method === 'POST') pm.test('Login recusado com o mesmo 401 genérico', () => {",
+              "  pm.expect(pm.response.code).to.eql(401);",
+              "  const erro = pm.response.json();",
+              "  pm.expect(erro.status).to.eql(401);",
+              "  pm.expect(erro.message).to.eql('Login ou senha inválidos');",
+              "  pm.expect(erro.fields).to.eql({});",
+              "  pm.expect(erro).not.to.have.any.keys('accessToken', 'refreshToken');",
+              "  [pm.variables.get('opLogin'), pm.variables.get('fixturePassword'), 'senha-incorreta-aula17'].forEach(valor => {",
+              "    if (valor) pm.expect(!pm.response.text().includes(valor)).to.eql(true);",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "01 Falha de autenticação 1",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"senha-incorreta-aula17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "02 Falha de autenticação 2",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"senha-incorreta-aula17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "03 Falha de autenticação 3",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"senha-incorreta-aula17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "04 Falha de autenticação 4",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"senha-incorreta-aula17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "05 Falha de autenticação 5",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"senha-incorreta-aula17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "06 Senha correta durante o bloqueio",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}\",\n  \"senha\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "07 Login inexistente",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacao/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacao",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{opLogin}}.inexistente\",\n  \"senha\": \"senha-incorreta-aula17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "08 Administrador consulta falhas",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auditoria-seguranca?tipo=LOGIN_FALHA&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auditoria-seguranca"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "LOGIN_FALHA"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Página filtrada, sem identificador interno ou credenciais', () => {",
+                  "  const dados = pm.response.json();",
+                  "  pm.expect(dados.page.number).to.eql(0);",
+                  "  pm.expect(dados.content).to.be.an('array').that.is.not.empty;",
+                  "  dados.content.forEach(evento => {",
+                  "    pm.expect(evento.tipo).to.eql('LOGIN_FALHA');",
+                  "    pm.expect(Object.keys(evento).every(campo => ['id', 'tipo', 'ocorridoEm', 'atorContaId', 'alvoContaId', 'enderecoOrigem'].includes(campo))).to.eql(true);",
+                  "  });",
+                  "  const texto = pm.response.text();",
+                  "  ['opLogin', 'fixturePassword', 'adminAccessToken', 'adminRefreshToken', 'otherAccessToken', 'otherRefreshToken'].forEach(chave => {",
+                  "    const valor = pm.variables.get(chave);",
+                  "    if (valor) pm.expect(!texto.includes(valor)).to.eql(true);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Administrador consulta a ativação",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auditoria-seguranca?tipo=BLOQUEIO_TEMPORARIO_ATIVADO&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auditoria-seguranca"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "BLOQUEIO_TEMPORARIO_ATIVADO"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Página filtrada, sem identificador interno ou credenciais', () => {",
+                  "  const dados = pm.response.json();",
+                  "  pm.expect(dados.page.number).to.eql(0);",
+                  "  pm.expect(dados.content).to.be.an('array').that.is.not.empty;",
+                  "  dados.content.forEach(evento => {",
+                  "    pm.expect(evento.tipo).to.eql('BLOQUEIO_TEMPORARIO_ATIVADO');",
+                  "    pm.expect(Object.keys(evento).every(campo => ['id', 'tipo', 'ocorridoEm', 'atorContaId', 'alvoContaId', 'enderecoOrigem'].includes(campo))).to.eql(true);",
+                  "  });",
+                  "  const texto = pm.response.text();",
+                  "  ['opLogin', 'fixturePassword', 'adminAccessToken', 'adminRefreshToken', 'otherAccessToken', 'otherRefreshToken'].forEach(chave => {",
+                  "    const valor = pm.variables.get(chave);",
+                  "    if (valor) pm.expect(!texto.includes(valor)).to.eql(true);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Operador não pode consultar auditoria",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auditoria-seguranca?tipo=LOGIN_FALHA&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auditoria-seguranca"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "LOGIN_FALHA"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.expect(pm.response.code).to.eql(403));"
                 ]
               }
             }

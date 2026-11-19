@@ -64,6 +64,7 @@ class ContaAcessoSecurityTest {
     @AfterEach
     void limpar() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            limparAuditoriaDaFixture(jdbc, contaId, login, "inexistente." + login);
             jdbc.update("DELETE FROM conta_acesso WHERE pessoa_id=?", pessoaId);
             jdbc.update("DELETE FROM pessoa WHERE id=? OR email=?", pessoaId, emailBootstrap);
         });

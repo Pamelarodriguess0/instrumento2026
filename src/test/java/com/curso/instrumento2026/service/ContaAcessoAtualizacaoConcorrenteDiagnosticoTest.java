@@ -59,6 +59,7 @@ class ContaAcessoAtualizacaoConcorrenteDiagnosticoTest {
     @AfterEach
     void limpar() {
         transacao().executeWithoutResult(status -> {
+            jdbc.update("DELETE FROM evento_seguranca WHERE alvo_conta_id = ?", contaId);
             jdbc.update("DELETE FROM conta_acesso WHERE pessoa_id=?", pessoaId);
             jdbc.update("DELETE FROM pessoa WHERE id=?", pessoaId);
         });

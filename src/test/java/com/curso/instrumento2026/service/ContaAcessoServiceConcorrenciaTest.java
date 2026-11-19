@@ -82,7 +82,8 @@ class ContaAcessoServiceConcorrenciaTest {
             }
         };
         // Usa o mesmo serviço e os repositories reais; cada tarefa fornece sua transação explicitamente.
-        var service = new ContaAcessoService(contas, pessoas, coordenado);
+        var service = new ContaAcessoService(contas, pessoas, coordenado,
+                org.mockito.Mockito.mock(AuditoriaSegurancaService.class));
         String login = "concorrente." + UUID.randomUUID();
         List<ResultadoCadastro> resultados;
         var executor = Executors.newFixedThreadPool(2);

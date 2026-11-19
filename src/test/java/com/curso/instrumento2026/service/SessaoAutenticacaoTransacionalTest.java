@@ -9,6 +9,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +29,7 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
+import static com.curso.instrumento2026.support.JwtTestSupport.limparAuditoriaDaFixture;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -36,6 +38,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 @ActiveProfiles("test")
 class SessaoAutenticacaoTransacionalTest {
+    @Autowired JdbcTemplate jdbc;
     private static final Instant INICIO = Instant.parse("2026-11-17T18:00:00Z");
     @Autowired SessaoAutenticacaoService service;
     @Autowired AutenticacaoService loginService;
@@ -80,6 +83,7 @@ class SessaoAutenticacaoTransacionalTest {
     @AfterEach void limpar() {
         // Limpeza restrita aos IDs desta fixture, em transação confirmada.
         if (contaId != null) novaTransacao(() -> {
+            limparAuditoriaDaFixture(jdbc, contaId, login);
             var conta = em.find(ContaAcesso.class, contaId);
             if (conta != null) em.remove(conta); // FK CASCADE remove as sessões.
             em.flush();

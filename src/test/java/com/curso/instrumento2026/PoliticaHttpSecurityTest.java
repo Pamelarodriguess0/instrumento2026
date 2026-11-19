@@ -65,6 +65,8 @@ class PoliticaHttpSecurityTest {
     @Autowired ApplicationContext contexto;
     @MockitoBean ContaAcessoService contas;
     @MockitoBean SessaoAutenticacaoService sessoes;
+    @MockitoBean ProtecaoAutenticacaoService protecao;
+    @MockitoBean AuditoriaSegurancaService auditoria;
     @MockitoBean PessoaService pessoas;
     @MockitoBean ClienteService clientes;
     @MockitoBean ColaboradorService colaboradores;

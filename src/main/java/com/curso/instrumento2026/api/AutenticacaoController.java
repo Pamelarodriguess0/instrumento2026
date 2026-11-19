@@ -8,6 +8,7 @@ import com.curso.instrumento2026.service.SessaoAutenticacaoService;
 import com.curso.instrumento2026.service.TokensAutenticacao;
 import org.springframework.http.ResponseEntity;
 import java.security.Principal;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import com.curso.instrumento2026.api.dto.ApiError;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,8 +44,8 @@ public class AutenticacaoController {
             + "Bearer inválido enviado ao endpoint pode ser rejeitado antes pelos filtros, sem este contrato JSON.",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
     @PostMapping("/login")
-    public TokenResponse login(@Valid @RequestBody LoginRequest request) {
-        return resposta(service.autenticarComSessao(request.login(), request.senha()));
+    public TokenResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        return resposta(service.autenticarComSessao(request.login(), request.senha(), httpRequest.getRemoteAddr()));
     }
 
     @PostMapping("/refresh")

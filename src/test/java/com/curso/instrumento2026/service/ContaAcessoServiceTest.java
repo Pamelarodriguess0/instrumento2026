@@ -59,6 +59,8 @@ class ContaAcessoServiceTest {
     @AfterEach
     void limpar() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            jdbc.update("DELETE FROM evento_seguranca WHERE alvo_conta_id IN "
+                    + "(SELECT id FROM conta_acesso WHERE pessoa_id IN (?,?))", pessoaId, outraPessoaId);
             jdbc.update("DELETE FROM conta_acesso WHERE pessoa_id IN (?,?)", pessoaId, outraPessoaId);
             jdbc.update("DELETE FROM pessoa WHERE id IN (?,?)", pessoaId, outraPessoaId);
         });

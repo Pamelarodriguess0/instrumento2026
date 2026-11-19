@@ -87,8 +87,11 @@ class SessaoRefreshTokenPersistenciaTest {
         assertEquals(3, jdbc.queryForObject("SELECT count(*) FROM databasechangelog "
                 + "WHERE filename='db/changelog/changes/007-sessoes-refresh-token.yaml'", Integer.class));
         assertEquals(41, jdbc.queryForObject("SELECT count(*) FROM databasechangelog "
-                + "WHERE filename <> 'db/changelog/changes/007-sessoes-refresh-token.yaml'", Integer.class));
-        assertEquals(44, jdbc.queryForObject("SELECT count(*) FROM databasechangelog", Integer.class));
+                + "WHERE filename NOT IN ('db/changelog/changes/007-sessoes-refresh-token.yaml', "
+                + "'db/changelog/changes/008-auditoria-protecao-autenticacao.yaml')", Integer.class));
+        assertEquals(3, jdbc.queryForObject("SELECT count(*) FROM databasechangelog "
+                + "WHERE filename='db/changelog/changes/008-auditoria-protecao-autenticacao.yaml'", Integer.class));
+        assertEquals(47, jdbc.queryForObject("SELECT count(*) FROM databasechangelog", Integer.class));
     }
 
     @Test

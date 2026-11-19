@@ -32,6 +32,7 @@ public class OpenApiConfig {
                             || (metodo == PathItem.HttpMethod.POST && caminho.equals("/api/autenticacao/login"));
                     if (publica) return;
                     boolean administrativa = metodo == PathItem.HttpMethod.DELETE
+                            || (metodo == PathItem.HttpMethod.GET && caminho.equals("/api/auditoria-seguranca"))
                             || (metodo == PathItem.HttpMethod.POST && caminho.equals("/api/contas-acesso"))
                             || caminho.matches("/api/contas-acesso/[^/]+/(perfis|status)");
                     String permissao = administrativa ? "ADMINISTRADOR" : "OPERADOR ou ADMINISTRADOR";
@@ -70,7 +71,10 @@ public class OpenApiConfig {
                 ? "JSON malformado ou campos de login inválidos" : "JSON malformado", "ApiError"));
         if (login || refresh || global) respostas.addApiResponse("401", respostaJson(
                 (refresh ? "Refresh token inválido ou expirado: ausente, vazio, desconhecido, utilizado, revogado, expirado ou conta/pessoa inativa. Mensagem genérica em ApiError. "
-                        : login ? "Credenciais inválidas em ApiError. " : "Identidade inexistente ou conta/pessoa inativa em ApiError. ")
+                        : login ? "Login ou senha inválidos. A mesma mensagem em ApiError cobre conta inexistente, senha incorreta, "
+                                + "conta bloqueada administrativamente, pessoa inativa e bloqueio temporário. "
+                                + "Durante o bloqueio temporário, até a senha correta é recusada. "
+                        : "Identidade inexistente ou conta/pessoa inativa em ApiError. ")
                 + "Bearer ausente (na operação protegida), inválido ou expirado é rejeitado pelos filtros de segurança, com WWW-Authenticate e sem corpo ApiError. O conteúdo JSON descrito aplica-se somente à rejeição do controller.", "ApiError"));
         // Logout público também pode rejeitar um Bearer inválido apresentado pelo cliente.
         if (!login && !refresh && !global) respostas.addApiResponse("401", new ApiResponse().description(

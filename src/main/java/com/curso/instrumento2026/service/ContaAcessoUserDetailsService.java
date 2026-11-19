@@ -20,7 +20,7 @@ public class ContaAcessoUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, noRollbackFor = UsernameNotFoundException.class)
     public UserDetails loadUserByUsername(String login) {
         if (login == null || login.isBlank()) {
             throw new UsernameNotFoundException("Login ou senha inválidos");

@@ -15,6 +15,7 @@ import org.springframework.boot.test.system.*;
 import org.springframework.boot.webmvc.test.autoconfigure.*;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -29,6 +30,7 @@ import java.time.*;
 import java.util.*;
 import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.*;
+import static com.curso.instrumento2026.support.JwtTestSupport.limparAuditoriaDaFixture;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
@@ -40,6 +42,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 class CicloTokenApiTest {
     @Autowired MockMvc mvc;
     @Autowired EntityManager em;
+    @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager manager;
     @Autowired PasswordEncoder encoder;
     @Autowired JwtDecoder decoder;
@@ -63,7 +66,7 @@ class CicloTokenApiTest {
         assertEquals(destino,environment.getProperty("spring.liquibase.url"));
         assertEquals("public",environment.getProperty("spring.datasource.hikari.schema"));
         assertEquals("public",environment.getProperty("spring.liquibase.default-schema"));
-        assertEquals("optional:file:./target/aula16-no-external-config.properties",environment.getProperty("spring.config.import"));
+        assertEquals("optional:file:./target/aula17-sem-config-externa.properties",environment.getProperty("spring.config.import"));
         assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
         tx=new TransactionTemplate(manager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -76,7 +79,7 @@ class CicloTokenApiTest {
             assertEquals("127.0.0.1",destinoReal[1]);
             assertEquals(5432,((Number)destinoReal[2]).intValue());
             assertEquals("public",destinoReal[3]);
-            assertEquals(44,((Number)em.createNativeQuery("select count(*) from databasechangelog").getSingleResult()).intValue());
+            assertEquals(47,((Number)em.createNativeQuery("select count(*) from databasechangelog").getSingleResult()).intValue());
             return null;
         });
     }
@@ -85,6 +88,7 @@ class CicloTokenApiTest {
         try {
             if(tx!=null) novaTransacao(() -> {
                 for(var f:fixtures) {
+                    limparAuditoriaDaFixture(jdbc, f.contaId(), f.login());
                     var conta=em.find(ContaAcesso.class,f.contaId());
                     if(conta!=null) em.remove(conta);
                     em.flush(); // FK CASCADE remove somente as sessões da própria fixture.
@@ -218,7 +222,12 @@ class CicloTokenApiTest {
     @ParameterizedTest @ValueSource(strings={"","{}","{\"refreshToken\":null}","{\"refreshToken\":\"\"}","{\"refreshToken\":\" \"}","{\"refreshToken\":\"desconhecido\"}"})
     void deveRejeitarRefreshAusenteVazioOuDesconhecido(String corpo) throws Exception {
         var f=fixture();
-        erroRefresh(post("/api/autenticacao/refresh").contentType(MediaType.APPLICATION_JSON).content(corpo));
+        // A falha anônima não tem conta nem hash para uma limpeza seletiva após o commit.
+        tx.executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            assertDoesNotThrow(() ->
+                    erroRefresh(post("/api/autenticacao/refresh").contentType(MediaType.APPLICATION_JSON).content(corpo)));
+        });
         novaTransacao(() -> {assertTrue(sessoes(f).isEmpty());return null;});
     }
 

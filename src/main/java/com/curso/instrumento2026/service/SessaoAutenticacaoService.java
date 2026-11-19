@@ -2,8 +2,10 @@ package com.curso.instrumento2026.service;
 
 import com.curso.instrumento2026.config.RefreshTokenProperties;
 import com.curso.instrumento2026.domain.*;
+import com.curso.instrumento2026.exception.CredenciaisInvalidasException;
 import com.curso.instrumento2026.exception.RefreshTokenInvalidoException;
 import com.curso.instrumento2026.repository.*;
+import jakarta.persistence.EntityManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,6 +17,8 @@ import java.security.*;
 import java.time.*;
 import java.util.*;
 
+import static com.curso.instrumento2026.domain.TipoEventoSeguranca.*;
+
 @Service
 public class SessaoAutenticacaoService {
     private final SessaoRefreshTokenRepository sessoes;
@@ -22,22 +26,30 @@ public class SessaoAutenticacaoService {
     private final TokenService tokens;
     private final RefreshTokenProperties properties;
     private final Clock clock;
+    private final EntityManager entityManager;
+    private final AuditoriaSegurancaService auditoria;
     private final SecureRandom random = new SecureRandom();
 
     public SessaoAutenticacaoService(SessaoRefreshTokenRepository sessoes, ContaAcessoRepository contas,
-                                    TokenService tokens, RefreshTokenProperties properties, Clock clock) {
+                                    TokenService tokens, RefreshTokenProperties properties, Clock clock,
+                                    EntityManager entityManager, AuditoriaSegurancaService auditoria) {
         this.sessoes = sessoes;
         this.contas = contas;
         this.tokens = tokens;
         this.properties = properties;
         this.clock = clock;
+        this.entityManager = entityManager;
+        this.auditoria = auditoria;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = CredenciaisInvalidasException.class)
     public TokensAutenticacao iniciar(Authentication authentication) {
         var conta = contas.findByLoginIgnoreCase(authentication.getName())
-                .orElseThrow(RefreshTokenInvalidoException::new);
-        if (!conta.podeAutenticar()) throw new RefreshTokenInvalidoException();
+                .orElseThrow(CredenciaisInvalidasException::new);
+        // A validação das credenciais pode ter carregado estas entidades na transação do login.
+        entityManager.refresh(conta.getPessoa());
+        entityManager.refresh(conta);
+        if (!conta.podeAutenticar()) throw new CredenciaisInvalidasException();
         Instant agora = clock.instant();
         return emitirPar(conta, UUID.randomUUID().toString(), agora,
                 agora.plus(properties.absoluteExpiration()));
@@ -45,9 +57,22 @@ public class SessaoAutenticacaoService {
 
     @Transactional(noRollbackFor = RefreshTokenInvalidoException.class)
     public TokensAutenticacao renovar(String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) throw new RefreshTokenInvalidoException();
-        var sessao = sessoes.buscarPorHashParaAtualizacao(calcularHash(refreshToken))
-                .orElseThrow(RefreshTokenInvalidoException::new);
+        SessaoRefreshToken sessao = refreshToken == null || refreshToken.isBlank() ? null
+                : sessoes.buscarPorHashParaAtualizacao(calcularHash(refreshToken)).orElse(null);
+        Long contaId = sessao == null ? null : sessao.getConta().getId();
+        TokensAutenticacao par;
+        try {
+            if (sessao == null) throw new RefreshTokenInvalidoException();
+            par = renovarSessao(sessao);
+        } catch (RefreshTokenInvalidoException exception) {
+            auditoria.registrar(REFRESH_FALHA, null, contaId, null, null);
+            throw exception;
+        }
+        auditoria.registrar(REFRESH_SUCESSO, contaId, contaId, null, null);
+        return par;
+    }
+
+    private TokensAutenticacao renovarSessao(SessaoRefreshToken sessao) {
         Instant agora = clock.instant();
         if (sessao.foiRevogada()) throw new RefreshTokenInvalidoException();
         if (sessao.foiUtilizada()) rejeitarFamilia(sessao, agora, MotivoRevogacaoRefreshToken.REUTILIZACAO);
@@ -69,8 +94,11 @@ public class SessaoAutenticacaoService {
     @Transactional
     public void encerrar(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) return;
-        sessoes.buscarPorHashParaAtualizacao(calcularHash(refreshToken)).ifPresent(sessao ->
-                sessoes.revogarFamilia(sessao.getFamiliaId(), clock.instant(), MotivoRevogacaoRefreshToken.LOGOUT));
+        sessoes.buscarPorHashParaAtualizacao(calcularHash(refreshToken)).ifPresent(sessao -> {
+            Long contaId = sessao.getConta().getId();
+            sessoes.revogarFamilia(sessao.getFamiliaId(), clock.instant(), MotivoRevogacaoRefreshToken.LOGOUT);
+            auditoria.registrar(LOGOUT, contaId, contaId, null, null);
+        });
     }
 
     @Transactional
@@ -82,6 +110,7 @@ public class SessaoAutenticacaoService {
         if (!conta.podeAutenticar())
             throw new com.curso.instrumento2026.exception.CredenciaisInvalidasException();
         sessoes.revogarTodasDaConta(conta.getId(), clock.instant(), MotivoRevogacaoRefreshToken.LOGOUT_GLOBAL);
+        auditoria.registrar(LOGOUT_GLOBAL, conta.getId(), conta.getId(), null, null);
     }
 
     private TokensAutenticacao emitirPar(ContaAcesso conta, String familia, Instant agora, Instant limite) {

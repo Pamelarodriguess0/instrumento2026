@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.LinkedHashSet;
+import static com.curso.instrumento2026.domain.TipoEventoSeguranca.*;
 import static com.curso.instrumento2026.service.ValidacaoCredenciais.normalizarLogin;
 import static com.curso.instrumento2026.service.ValidacaoCredenciais.validarSenha;
 
@@ -28,12 +29,14 @@ public class ContaAcessoService {
     private final ContaAcessoRepository repository;
     private final PessoaRepository pessoaRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditoriaSegurancaService auditoria;
 
     public ContaAcessoService(ContaAcessoRepository repository, PessoaRepository pessoaRepository,
-                              PasswordEncoder passwordEncoder) {
+                              PasswordEncoder passwordEncoder, AuditoriaSegurancaService auditoria) {
         this.repository = repository;
         this.pessoaRepository = pessoaRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditoria = auditoria;
     }
 
     @Transactional
@@ -54,9 +57,10 @@ public class ContaAcessoService {
             throw new IllegalArgumentException("Pessoa deve estar ativa");
         }
         ContaAcesso conta = new ContaAcesso(pessoa, loginNormalizado, passwordEncoder.encode(senha));
+        Long atorId = identificarAtor();
         try {
             // Faz o banco arbitrar também as disputas que ultrapassam as pré-consultas.
-            return repository.saveAndFlush(conta);
+            conta = repository.saveAndFlush(conta);
         } catch (DataIntegrityViolationException exception) {
             for (Throwable causa = exception; causa != null; causa = causa.getCause()) {
                 if (causa instanceof PSQLException violacao
@@ -73,6 +77,8 @@ public class ContaAcessoService {
             }
             throw exception;
         }
+        auditoria.registrar(CONTA_CRIADA, atorId, conta.getId(), null, null);
+        return conta;
     }
 
     @Transactional(readOnly = true)
@@ -101,6 +107,7 @@ public class ContaAcessoService {
             throw new IllegalArgumentException("Nova senha deve ser diferente da senha atual");
         }
         conta.alterarSenha(passwordEncoder.encode(novaSenha));
+        auditoria.registrar(SENHA_ALTERADA, conta.getId(), conta.getId(), null, null);
     }
 
     @Transactional
@@ -121,6 +128,7 @@ public class ContaAcessoService {
             protegerUltimoAdministrador(conta);
         }
         conta.substituirPerfis(validados);
+        auditoria.registrar(PERFIS_ALTERADOS, identificarAtor(), conta.getId(), null, null);
         return conta;
     }
 
@@ -136,7 +144,13 @@ public class ContaAcessoService {
             protegerUltimoAdministrador(conta);
         }
         if (status == StatusContaAcesso.ATIVA) conta.ativar(); else conta.bloquear();
+        auditoria.registrar(STATUS_ALTERADO, identificarAtor(), conta.getId(), null, null);
         return conta;
+    }
+
+    private Long identificarAtor() {
+        var autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        return autenticacao == null ? null : auditoria.identificarConta(autenticacao.getName());
     }
 
     private boolean propriaConta(ContaAcesso conta) {

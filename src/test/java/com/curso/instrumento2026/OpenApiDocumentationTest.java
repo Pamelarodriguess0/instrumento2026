@@ -436,6 +436,7 @@ class OpenApiDocumentationTest {
                     login.get("responses").get(codigo).at("/content/application~1json/schema/$ref").asText());
         }
         assertTrue(login.at("/responses/401/description").asText().contains("filtros"));
+        assertTrue(login.at("/responses/401/description").asText().contains("bloqueio temporário, até a senha correta é recusada"));
         assertFalse(documento.get("components").get("securitySchemes").has("basicAuth"));
         var schemas = documento.at("/components/schemas");
         var senha = schemas.at("/LoginRequest/properties/senha");

@@ -4,6 +4,7 @@ import com.curso.instrumento2026.config.RefreshTokenProperties;
 import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.exception.RefreshTokenInvalidoException;
 import com.curso.instrumento2026.repository.*;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -27,7 +28,8 @@ class SessaoAutenticacaoServiceTest {
     @BeforeEach void configurar() {
         conta = new ContaAcesso(new Pessoa("Pessoa", "pessoa@example.com", "52998224725", LocalDate.of(2026,11,17)), "operador", "hash-sintetico");
         service = new SessaoAutenticacaoService(sessoes, contas, tokens,
-                new RefreshTokenProperties(Duration.ofMinutes(30), Duration.ofHours(8)), Clock.fixed(AGORA, ZoneOffset.UTC));
+                new RefreshTokenProperties(Duration.ofMinutes(30), Duration.ofHours(8)),
+                Clock.fixed(AGORA, ZoneOffset.UTC), mock(EntityManager.class), mock(AuditoriaSegurancaService.class));
         auth = UsernamePasswordAuthenticationToken.authenticated("operador", null, List.of());
         when(contas.findByLoginIgnoreCase("operador")).thenReturn(Optional.of(conta));
         when(tokens.emitir(any(), anyString())).thenReturn(new TokenAcesso("access-sintetico", AGORA.plusSeconds(1800),1800));

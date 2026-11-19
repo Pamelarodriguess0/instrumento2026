@@ -10,6 +10,7 @@ import com.curso.instrumento2026.domain.*;
 import com.curso.instrumento2026.repository.ContaAcessoRepository;
 import com.curso.instrumento2026.repository.PessoaRepository;
 import com.curso.instrumento2026.service.ContaAcessoService;
+import com.curso.instrumento2026.service.AuditoriaSegurancaService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,6 +68,7 @@ class ContaAcessoAdministracaoTest {
     @Autowired ContaAcessoService service;
     @Autowired ApplicationContext contexto;
     @MockitoBean ContaAcessoRepository contas;
+    @MockitoBean AuditoriaSegurancaService auditoria;
     @MockitoBean PessoaRepository pessoas;
     private ContaAcesso atual;
     private ContaAcesso outra;

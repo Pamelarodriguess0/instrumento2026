@@ -78,6 +78,9 @@ class ContaAcessoApiTest {
     @AfterEach
     void limpar() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            limparAuditoriaDaFixture(jdbc, contaId, login, outroLogin);
+            jdbc.update("DELETE FROM evento_seguranca WHERE alvo_conta_id IN "
+                    + "(SELECT id FROM conta_acesso WHERE pessoa_id = ?)", outraPessoaId);
             jdbc.update("DELETE FROM conta_acesso WHERE pessoa_id IN (?,?)", pessoaId, outraPessoaId);
             jdbc.update("DELETE FROM pessoa WHERE id IN (?,?)", pessoaId, outraPessoaId);
         });
@@ -338,7 +341,38 @@ class ContaAcessoApiTest {
     void novasOperacoesNaoDevemAlterarRotasOuSchemasHistoricos() throws Exception {
         String yaml = mvc.perform(get("/v3/api-docs.yaml")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
-        com.curso.instrumento2026.support.ContratoOpenApiSupport.verificarCompatibilidadeComAula10(
-                io.swagger.v3.core.util.Yaml.mapper().readTree(yaml));
+        var documento = io.swagger.v3.core.util.Yaml.mapper().readTree(yaml);
+        var caminhos = (com.fasterxml.jackson.databind.node.ObjectNode) documento.get("paths");
+        var auditoria = caminhos.remove("/api/auditoria-seguranca");
+        assertNotNull(auditoria);
+        assertEquals(1, auditoria.size());
+        assertTrue(auditoria.has("get"));
+        var consulta = auditoria.get("get");
+        assertTrue(consulta.path("description").asText().endsWith(
+                "Autorização: exige Bearer JWT com perfil ADMINISTRADOR."));
+        var parametros = new java.util.HashMap<String, com.fasterxml.jackson.databind.JsonNode>();
+        consulta.path("parameters").forEach(parametro -> parametros.put(parametro.path("name").asText(), parametro));
+        assertEquals(java.util.Set.of("tipo", "page", "size"), parametros.keySet());
+        assertTrue(parametros.values().stream().allMatch(parametro -> "query".equals(parametro.path("in").asText())));
+        assertEquals("0", parametros.get("page").at("/schema/default").asText());
+        assertEquals("20", parametros.get("size").at("/schema/default").asText());
+        assertFalse(parametros.get("tipo").path("required").asBoolean());
+        assertEquals("#/components/schemas/PagedModelEventoSegurancaResponse",
+                consulta.at("/responses/200/content/*~1*/schema/$ref").asText());
+        for (String codigo : java.util.List.of("401", "403")) {
+            var resposta = consulta.path("responses").path(codigo);
+            assertTrue(resposta.path("description").asText().contains("filtros de segurança"));
+            assertFalse(resposta.has("content"));
+        }
+
+        var schemas = (com.fasterxml.jackson.databind.node.ObjectNode) documento.at("/components/schemas");
+        assertFalse(schemas.at("/EventoSegurancaResponse/properties").has("identificadorHash"));
+        assertTrue(schemas.at("/PagedModelEventoSegurancaResponse/properties/content").isObject());
+        assertTrue(schemas.at("/PagedModelEventoSegurancaResponse/properties/page").isObject());
+        for (String schema : java.util.List.of("EventoSegurancaResponse", "PageMetadata",
+                "PagedModelEventoSegurancaResponse")) {
+            assertNotNull(schemas.remove(schema), schema);
+        }
+        com.curso.instrumento2026.support.ContratoOpenApiSupport.verificarCompatibilidadeComAula10(documento);
     }
 }
